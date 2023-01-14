@@ -36,22 +36,23 @@ async def authenticate(request):
                              status_code=400, quiet=True)
 
     # Get the user object from DB and verifiy their password
-    user = await User.filter(username=username).values()
+    user = await User.filter(username=username).get_or_none().values()
 
+    # Check user exists and then check their password
     if not user:
         print("not user")
         raise AuthError
 
     print(password)
     password = password.encode("utf-8")
-    if bcrypt.checkpw(password, user[0]['password'].encode("utf-8")):
+    if bcrypt.checkpw(password, user['password'].encode("utf-8")):
         print("success")
     else:
         raise Exception
         raise AuthError
 
     # Return details if successful
-    return user[0]
+    return user
 
 
 async def scope_extender(user):
@@ -67,12 +68,17 @@ def load_details(payload, user):
 Initialize(
     app,
     authenticate=authenticate,
+    secret="7N3%WZrjj$eDYC7czPyP",
     add_scopes_to_payload=scope_extender,
     extend_payload=load_details,
-    cookie_set=True,
     access_token_name="auth_token",
-    cookie_access_token_name="auth_token",
-    secret="7N3%WZrjj$eDYC7czPyP")
+    cookie_set=True,
+    cookie_secure=False,
+    cookie_domain="",
+    cookie_token_name="auth_token",
+    cookie_split_signature_name="auth_token_signature",
+    cookie_split=True,
+    cookie_strict=False)
 
 api.add_resource(APIUsers, '/users', '/users/<username>',
                  '/user', '/user/<username>')
