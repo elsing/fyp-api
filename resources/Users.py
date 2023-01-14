@@ -44,7 +44,7 @@ class AuthenticationHeaders(Schema):
 
 
 class APIUsers(Resource):
-    # method_decorators = [protected()]
+    method_decorators = [protected()]
 
     async def get(self, request, username, local=False):
         # Make sure username is not empty
@@ -67,7 +67,7 @@ class APIUsers(Resource):
             raise SanicException("User not found...",
                                  status_code=404, quiet=True)
 
-    # @scoped(['admin'])
+    @scoped(['admin'])
     async def post(self, request, username=""):
         # Attempt to validate data first - this will be removed soon, as tortoise has validation
         try:
