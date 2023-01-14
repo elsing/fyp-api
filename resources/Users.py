@@ -1,16 +1,14 @@
-import asyncio
-import json
-import aiomysql
-import uvloop
-
+import bcrypt
+from sanic_jwt.decorators import protected
+from sanic_jwt.decorators import scoped
 from functools import wraps
 from sanic.exceptions import SanicException
-from sanic_restful_api import Resource, reqparse, abort
-from marshmallow import Schema, fields, ValidationError, INCLUDE
-# import email_validator
-
-from sanic import text, json
+from sanic_restful_api import Resource
+from marshmallow import Schema, fields, ValidationError, EXCLUDE
+from argon2 import PasswordHasher
+from sanic import text
 from sanic.log import logger
+from common.models import User
 
 
 class UnauthorisedError(SanicException):
@@ -25,118 +23,111 @@ class DBAccessError(SanicException):
     quiet = False
 
 
-class User(Schema):
+class UserValidation(Schema):
     org_id = fields.Int(load_default=1)
     username = fields.Str(required=True)
     email = fields.Email(required=True)
-    password = fields.Str(required=True, )
+    password = fields.Str(required=True)
     first_name = fields.Str(required=True)
     last_name = fields.Str(load_default="")
-    permission = fields.Str(load_default="")
+    permission = fields.Str(load_default="default")
 
 
-def authorised(f):
-    @wraps(f)
-    async def wrapper(request, username):
-        parser = reqparse.RequestParser(bundle_errors=True)
-        parser.add_argument('api_key', location='headers', type=str,
-                            required=True, help='Please provide an API access key.')
-        args = parser.parse_args(request)
-        logger.info(args['api_key'])
+class AuthenticationHeaders(Schema):
+    username = fields.Str()
+    password = fields.Str()
+    session_key = fields.Str(required=True, error_messages={
+        "required": "No key included in request."})
 
-        if args['api_key']:
-            # MySQL
-            try:
-                loop = asyncio.get_event_loop()
-                conn = await aiomysql.connect(host='10.100.22.1', port=3307,
-                                              user='root', password='root',
-                                              db='fyp', loop=loop)
-                async with conn.cursor() as cur:
-                    res = await cur.execute('SELECT API_key from panel WHERE API_key = "{}"'.format(args['api_key']))
-                res = await cur.fetchall()
-                await cur.close()
-            except:
-                raise DBAccessError
-            for ans in res:
-                if res[0][0] == args['api_key']:
-                    logger.info("Authorised!")
-                    return await f(request, username)
-            raise UnauthorisedError
-    return wrapper
+    class Meta:
+        unknown = EXCLUDE
 
 
-# asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+class APIUsers(Resource):
+    # method_decorators = [protected()]
 
-
-class Users(Resource):
-    method_decorators = [authorised]
-
-    async def get(self, request, username, *args):
-        if not args:
-            local = False
-        else:
-            local = True
+    async def get(self, request, username, local=False):
+        # Make sure username is not empty
+        if username == "":
+            raise SanicException("User not specified...!",
+                                 status_code=404, quiet=True)
+        # Log GET username request
         logger.info("GET username request for '{}'".format(username))
-        parser = reqparse.RequestParser()
+        # Attempt to find user
         try:
-            loop = asyncio.get_event_loop()
-            conn = await aiomysql.connect(host='10.100.22.1', port=3307,
-                                          user='root', password='root',
-                                          db='fyp', loop=loop)
-            async with conn.cursor() as cur:
-                res = await cur.execute('SELECT username,password,first_name,last_name from user WHERE username = "{}"'.format(username))
-            res = await cur.fetchall()
-            await cur.close()
+            user = await User.filter(username=username).values_list("username", "password", "first_name", "last_name")
         except:
             raise DBAccessError
-        logger.info("GetUser res")
-        logger.info(res)
-        for ans in res:
-            return {"username": ans[0], "password": ans[1], "first_name": ans[2], "second_name": ans[3]}
+        # If found, return JSON of user data
+        if user:
+            for details in user:
+                return {"username": details[0], "password": details[1], "first_name": details[2], "last_name": details[3]}
+        # Raise if not found
         if local != True:
             raise SanicException("User not found...",
                                  status_code=404, quiet=True)
 
-    async def post(self, request, *username):
+    # @scoped(['admin'])
+    async def post(self, request, username=""):
+        # Attempt to validate data first - this will be removed soon, as tortoise has validation
         try:
-            input = User().load(request.json)
+
+            input = UserValidation().load(request.json)
         except ValidationError as err:
             logger.info("Error")
+            logger.info(request.json)
             logger.info(err.messages)
             raise SanicException("Error: {}".format(
                 err.messages), status_code=400, quiet=True)
+        # Log request
         logger.info("POST user request for '{}'".format(input["username"]))
+        # Test if user already exists
         try:
-            res = await self.get(request, input['username'], 1)
+            res = await self.get(request, input['username'], local=True)
         except:
-            raise DBAccessError
+            raise SanicException(status_code=500, quiet=True)
         if res:
             raise SanicException("Username already exists...",
                                  status_code=409, quiet=True)
+        # Encrypt Password
 
+        # Argon verification is not working
+        # ph = PasswordHasher()
+        # hash = ph.hash(input['password'])
+        hash = bcrypt.hashpw(
+            input['password'].encode("utf-8"), bcrypt.gensalt())
+
+        # Try create user
         try:
-            loop = asyncio.get_event_loop()
-            conn = await aiomysql.connect(host='10.100.22.1', port=3307,
-                                          user='root', password='root',
-                                          db='fyp', loop=loop)
-            async with conn.cursor() as cur:
-                res = await cur.execute('INSERT into user (org_id, username, email, password, first_name, last_name, permission) VALUES ({0}, "{1}", "{2}", "{3}", "{4}", "{5}", "{6}")'.format(input["org_id"], input["username"], input["email"], input["password"], input["first_name"], input["last_name"], input["permission"]))
-            await conn.commit()
-            await cur.close()
+            await User.create(org_id_id=input['org_id'], username=input['username'], email=input['email'], password=hash.decode("utf-8"),
+                              first_name=input['first_name'], last_name=input['last_name'], permission=input['permission'])
+            pass
         except:
             raise DBAccessError
+        # Log and return success
         logger.info("User added with username: {}".format(input["username"]))
-        raise SanicException("User added!", status_code=201, quiet=True)
+        return text("User added! ✅", status=201)
 
     async def delete(self, request, username):
-        try:
-            input = User(only="username").load(request.json)
-        except ValidationError as err:
-            logger.info("Error")
-            logger.info(err.messages)
-            raise SanicException("Error: {}".format(
-                err.messages), status_code=400, quiet=True)
-        logger.info(input)
+        # if username == "":
+        #     raise SanicException("User not specified...!",
+        #                          status_code=404, quiet=True)
         # try:
-        #     res = await self.get(request, input['username'], 1)
-        # except: raise DBAccessError
+        #     input = UserValidation(only="username").load(request.json)
+        # except ValidationError as err:
+        #     logger.info("Error")
+        #     logger.info(err.messages)
+        #     raise SanicException("Error: {}".format(
+        #         err.messages), status_code=400, quiet=True)
+        try:
+            res = await self.get(request, username, local=True)
+        except:
+            raise SanicException(status_code=500, quiet=True)
+        if not res:
+            raise SanicException("User does not exist...",
+                                 status_code=404, quiet=True)
+        try:
+            await User.filter(username=username).delete()
+        except:
+            raise DBAccessError
+        return text("User deleted! 🗑️")

@@ -1,43 +1,81 @@
+import bcrypt
 from sanic import Sanic
-from sanic.response import text
+from sanic.response import text, json
+from sanic.exceptions import SanicException
 from sanic_restful_api import Resource, Api
-#from sanic_mysql import ExtendMySQL
-from resources.Users import Users
+from resources.Users import APIUsers
+from tortoise.contrib.sanic import register_tortoise
+from sanic_jwt import Initialize
+from common.models import User
+from argon2 import PasswordHasher
+from sanic.log import logger
 
-#from auth import procted
 
+class AuthError(SanicException):
+    message = "Either your password or username are wrong."
+    status_code = 401
+    quiet = True
 
 
 app = Sanic(__name__)
-#app.config.update(dict(MYSQL=dict(host='10.100.22.1', port=3307, user='root', password='root',db='fyp')))
-#ExtendMySQL(app, auto=True, user='root', host=hostname, port="3307", password='root', db='fyp', autocommit=True)
-
-app.config.KEEP_ALIVE_TIMEOUT=30
-#app.config.SECRET = "1234"
-
+app.config.KEEP_ALIVE_TIMEOUT = 30
 api = Api(app)
 
+register_tortoise(
+    app, db_url="mysql://root:root@10.100.22.1:3307/fyp_v2", modules={"models": ["common.models"]}, generate_schemas=True
+)
 
-#ExtendMySQL(app, user="root", host=10.100.22.1, port="3307", password="root", autocommit=True)
 
-class HelloWorld(Resource):
-    async def get(self, request):
-        args = parser.parse_args(request)
-        return 
-        #print(request)
+async def authenticate(request):
+    # Get the username and password from the JSON request
+    username = request.json.get('username', None)
+    password = request.json.get('password', None)
+    # If there is no password or username, raise
+    if not username or not password:
+        raise SanicException("Missing information...!",
+                             status_code=400, quiet=True)
 
-#api.add_resource(HelloWorld, '/')
+    # Get the user object from DB and verifiy their password
+    user = await User.filter(username=username).values()
 
-# class GetUser(Resource):
-#     async def get(self, request):
-#         val = await request.app.mysql.query("SELECT user_id,username,password from user WHERE username = 'test'")
-#         return text(val)
+    if not user:
+        print("not user")
+        raise AuthError
 
-#@app.get("/secret")
-#@protected
-#@authorised()
-#api.add_resource(GetUser, '/user')
-api.add_resource(Users, '/users', '/users/<username>')
+    print(password)
+    password = password.encode("utf-8")
+    if bcrypt.checkpw(password, user[0]['password'].encode("utf-8")):
+        print("success")
+    else:
+        raise Exception
+        raise AuthError
+
+    # Return details if successful
+    return user[0]
+
+
+async def scope_extender(user):
+    return user['permission']
+
+
+def load_details(payload, user):
+    payload.update(
+        {"first_name": user['first_name'], "last_name": user["last_name"]})
+    return payload
+
+
+Initialize(
+    app,
+    authenticate=authenticate,
+    add_scopes_to_payload=scope_extender,
+    extend_payload=load_details,
+    cookie_set=True,
+    access_token_name="auth_token",
+    cookie_access_token_name="auth_token",
+    secret="7N3%WZrjj$eDYC7czPyP")
+
+api.add_resource(APIUsers, '/users', '/users/<username>',
+                 '/user', '/user/<username>')
 
 if __name__ == '__main__':
     app.run(debug=True)
