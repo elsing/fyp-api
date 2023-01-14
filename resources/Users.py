@@ -13,6 +13,12 @@ from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
 
 
+def userNotNull(username):
+    if username == "":
+        raise SanicException(
+            "User not specified...! Use /user(s)/USER", status_code=404)
+
+
 class UnauthorisedError(SanicException):
     message = "Unauthorised access...!"
     status_code = 401
@@ -51,9 +57,7 @@ class APIUsers(Resource):
     @scoped(['admin'])
     async def get(self, request, username=""):
         # Make sure username is not empty
-        if username == "":
-            raise SanicException("User not specified...! Use /user(s)/USER",
-                                 status_code=404)
+        userNotNull(username)
         # Log GET username request
         logger.info("GET username request for '{}'".format(username))
         # Attempt to find user
@@ -66,7 +70,7 @@ class APIUsers(Resource):
         if user:
             return {"username": user[0], "password": user[1], "first_name": user[2], "last_name": user[3]}
         # Raise if not found
-        return json({"message": "User not found...! 🔍", "error": "not_found"}, status=404)
+        return SanicException("User not found...! 🔍", status_code=404)
 
     @scoped(['admin'])
     async def post(self, request, username="", existing=False):
@@ -92,11 +96,11 @@ class APIUsers(Resource):
         # What is duplicated? This needs to bundle the errors at some point...!
         if existing:
             if existing[0] == input['username']:
-                return json({"message": "Username already exists...!",
-                             "error": "username"}, status=409)
+                raise SanicException("Username already exists...!",
+                                     status_code=409)
             elif existing[1] == input['email']:
-                return json({"message": "Email already exists...!",
-                             "error": "email"}, status=409)
+                raise SanicException("Email already exists...!",
+                                     status_code=409)
         # Encrypt Password
 
         # Argon verification is not working
@@ -118,11 +122,13 @@ class APIUsers(Resource):
         return text("User added! ✅", status=201)
 
     @scoped(['admin'])
-    async def delete(self, request, username):
+    async def delete(self, request, username=""):
+        userNotNull(username)
         try:
             res = await User.filter(username=username).get_or_none()
             if not res:
-                return json({"message": "User does not exist...! 😕", "error": "empty"}, status=404)
+                raise SanicException(
+                    "User does not exist...! 😕", status_code=404)
             await User.filter(username=username).delete()
         except:
             raise DBAccessError

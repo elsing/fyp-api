@@ -19,6 +19,7 @@ class AuthError(SanicException):
 
 app = Sanic(__name__)
 app.config.KEEP_ALIVE_TIMEOUT = 30
+app.config.FALLBACK_ERROR_FORMAT = "json"
 api = Api(app)
 
 register_tortoise(
