@@ -6,9 +6,10 @@ from sanic.log import logger
 from sanic.exceptions import SanicException
 from sanic_jwt.decorators import protected
 from sanic_jwt.decorators import scoped
-from marshmallow import Schema, fields, ValidationError, EXCLUDE
+from marshmallow import ValidationError
 # from argon2 import PasswordHasher
-from common.models import User
+from common.models import User, UserValidation
+from common.errors import DBAccessError, UnauthorisedError
 from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
 
@@ -18,37 +19,14 @@ def userNotNull(username):
         raise SanicException(
             "User not specified...! Use /user(s)/USER", status_code=404)
 
+# class AuthenticationHeaders(Schema):
+#     username = fields.Str()
+#     password = fields.Str()
+#     session_key = fields.Str(required=True, error_messages={
+#         "required": "No key included in request."})
 
-class UnauthorisedError(SanicException):
-    message = "Unauthorised access...!"
-    status_code = 401
-    quiet = False
-
-
-class DBAccessError(SanicException):
-    message = "DB access error...!"
-    status_code = 500
-    quiet = False
-
-
-class UserValidation(Schema):
-    org_id = fields.Int(load_default=1)
-    username = fields.Str(required=True)
-    email = fields.Email(required=True)
-    password = fields.Str(required=True)
-    first_name = fields.Str(required=True)
-    last_name = fields.Str(load_default="")
-    permission = fields.Str(load_default="default")
-
-
-class AuthenticationHeaders(Schema):
-    username = fields.Str()
-    password = fields.Str()
-    session_key = fields.Str(required=True, error_messages={
-        "required": "No key included in request."})
-
-    class Meta:
-        unknown = EXCLUDE
+#     class Meta:
+#         unknown = EXCLUDE
 
 
 class APIUsers(Resource):
@@ -70,13 +48,12 @@ class APIUsers(Resource):
         if user:
             return {"username": user[0], "password": user[1], "first_name": user[2], "last_name": user[3]}
         # Raise if not found
-        return SanicException("User not found...! 🔍", status_code=404)
+        raise SanicException("User not found...! :( 🔍", status_code=404)
 
     @scoped(['admin'])
     async def post(self, request, username="", existing=False):
         # Attempt to validate data first - this will be removed soon, as tortoise has validation
         try:
-
             input = UserValidation().load(request.json)
         except ValidationError as err:
             logger.info("Error")
@@ -114,7 +91,6 @@ class APIUsers(Resource):
         try:
             await User.create(org_id_id=input['org_id'], username=input['username'], email=input['email'], password=hash.decode("utf-8"),
                               first_name=input['first_name'], last_name=input['last_name'], permission=input['permission'])
-            pass
         except:
             raise DBAccessError
         # Log and return success
