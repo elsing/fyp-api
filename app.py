@@ -93,16 +93,17 @@ Initialize(
     cookie_split_signature_name="auth_token_signature",
     cookie_split=True,
     cookie_strict=False,
-    cookie_samesite=None)
+    cookie_samesite=None,
+    cookie_max_age=3600,)
 
 api.add_resource(APIUsers, '/users', '/users/<username>',
                  '/user', '/user/<username>')
 
-api.add_resource(APIFlows, '/flows', '/flows/<flow>',
-                 '/flow', '/flow/<flow>')
+api.add_resource(APIFlows, '/flows', '/flows/<flow_id>',
+                 '/flow', '/flow/<flow_id>')
 
-api.add_resource(APIStreams, '/streams', '/streams/<stream>',
-                 '/stream', '/stream/<stream>')
+api.add_resource(APIStreams, '/streams', '/streams/<stream_id>',
+                 '/stream', '/stream/<stream_id>')
 
 
 @app.route("/auth/logout")

@@ -16,11 +16,43 @@ from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
 
 
+def flowObjGenerator(flow):
+    flowObj = {flow[0]: {}}
+    values = [{'org_id': flow[1]}, {'stream_id': flow[2]}, {'name': flow[3]}, {
+        'protocol': flow[4]}, {'port': flow[5]}, {'status': flow[6]}, {'to': flow[7]}]
+    for value in values:
+        flowObj[flow[0]].update(value)
+    return flowObj
+
+
 class APIFlows(Resource):
     method_decorators = [protected()]
 
-    async def get(self, request):
-        pass
+    async def get(self, request, flow_id="all"):
+        logger.info("GET flow request for '{}'".format(flow_id))
+
+        try:
+            if flow_id == "all":
+                flows = await Flow.all().values_list("flow_id", "org_id_id", "stream_id_id", "name", "protocol", "port", "status", "to")
+            else:
+                flows = []
+                flows.append(await Flow.filter(flow_id=flow_id).get_or_none().values_list("flow_id", "org_id_id", "stream_id_id", "name", "protocol", "port", "status", "to"))
+        except ValueError:
+            raise SanicException("Bad request...! :( 🔍", status_code=400)
+        except:
+            raise DBAccessError
+        # Return JSON of all flows, unless one is specified
+
+        if flows:
+            # Generate JSON
+            flowsObj = {}
+            for flow in flows:
+                flowObjGenerator(flow)
+                flowsObj.update(flowObjGenerator(flow))
+            return flowsObj
+        # Raise if not found
+        raise SanicException(
+            "That flow was not found...! :( 🔍", status_code=404)
 
     async def post(self, request):
         # Get user_id from request
