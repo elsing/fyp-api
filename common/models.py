@@ -51,33 +51,57 @@ class Stream(Model):
     stream_id = dbfields.IntField(pk=True)
     org_id = dbfields.ForeignKeyField("models.Org", related_name="streams")
     name = dbfields.CharField(max_length=50)
+    initiated = dbfields.BooleanField(default=False)
 
 
 class StreamValidation(Schema):
     org_id = fields.Int(load_default=1)
     name = fields.Str(required=True)
+    initiated = fields.Bool(load_default=False)
+
+
+class StreamsFlows(Model):
+    id = dbfields.IntField(pk=True)
+    org_id = dbfields.ForeignKeyField(
+        "models.Org", related_name="streamsflows")
+    stream_id = dbfields.ForeignKeyField(
+        "models.Stream", related_name="streams")
+    flow_id = dbfields.ForeignKeyField("models.Flow", related_name="flows")
+    role = dbfields.CharField(default="client", max_length=6)
+    protocol = dbfields.CharField(max_length=10, default="wireguard")
+    port = dbfields.IntField(max_length=5, default=51820)
+    config = dbfields.CharField(null=True, max_length=1000)
+    tunnel = dbfields.CharField(null=True, max_length=1000)
+    error = dbfields.CharField(null=True, max_length=1000)
+
+
+class StreamsFlowsValidation(Schema):
+    org_id = fields.Int(load_default=1)
+    stream_id = fields.Int(required=True)
+    flow_id = fields.Int(required=True)
+    role = fields.Str(load_default="client")
+    protocol = fields.Str(load_default="wireguard")
+    port = fields.Int(load_default=51820)
+    config = fields.Str()
+    tunnel = fields.Str()
+    error = fields.Str()
 
 
 class Flow(Model):
     flow_id = dbfields.IntField(pk=True)
     org_id = dbfields.ForeignKeyField("models.Org", related_name="flows")
-    stream_id = dbfields.ForeignKeyField(
-        "models.Stream", related_name="flows", default=1)
     name = dbfields.CharField(max_length=50)
     create_time = dbfields.DatetimeField(auto_now_add=True)
     created_by = dbfields.ForeignKeyField(
         "models.User", related_name="users")
-    protocol = dbfields.CharField(max_length=10, default="wireguard")
-    port = dbfields.IntField(max_length=5, default=51820)
     status = dbfields.CharField(max_length=10, default="init")
-    to = dbfields.CharField(max_length=50, null=True)
+    description = dbfields.CharField(max_length=255, null=True, default="")
+    monitor = dbfields.BooleanField(default=True)
 
 
 class FlowValidation(Schema):
     org_id = fields.Int(load_default=1)
-    stream_id = fields.Int(load_default=1)
     name = fields.Str(required=True)
-    protocol = fields.Str(load_default="wireguard")
-    port = fields.Int(load_default=51820)
     status = fields.Str(load_default="init")
-    to = fields.Str(load_default=None)
+    description = fields.Str(load_default="")
+    monitor = fields.Boolean(load_default=True)

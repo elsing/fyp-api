@@ -33,23 +33,16 @@ class APIFlows(Resource):
 
         try:
             if flow_id == "all":
-                flows = await Flow.all().values_list("flow_id", "org_id_id", "stream_id_id", "name", "protocol", "port", "status", "to")
+                flows = await Flow.all().values("fow_id", "org_id_id", "stream_id_id", "name", "status", "description", "monitor")
             else:
-                flows = []
-                flows.append(await Flow.filter(flow_id=flow_id).get_or_none().values_list("flow_id", "org_id_id", "stream_id_id", "name", "protocol", "port", "status", "to"))
+                flows = await Flow.filter(flow_id=flow_id).get_or_none().values("fow_id", "org_id_id", "stream_id_id", "name", "status", "description", "monitor")
         except ValueError:
             raise SanicException("Bad request...! :( 🔍", status_code=400)
         except:
             raise DBAccessError
         # Return JSON of all flows, unless one is specified
-
         if flows:
-            # Generate JSON
-            flowsObj = {}
-            for flow in flows:
-                flowObjGenerator(flow)
-                flowsObj.update(flowObjGenerator(flow))
-            return flowsObj
+            return flows
         # Raise if not found
         raise SanicException(
             "That flow was not found...! :( 🔍", status_code=404)
