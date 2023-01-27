@@ -99,9 +99,15 @@ class Flow(Model):
     monitor = dbfields.BooleanField(default=True)
 
 
-class FlowValidation(Schema):
+class FlowCreateValidation(Schema):
     org_id = fields.Int(load_default=1)
     name = fields.Str(required=True)
     status = fields.Str(load_default="init")
     description = fields.Str(load_default="")
     monitor = fields.Boolean(load_default=True)
+
+
+class FlowModifyValidation(Schema):
+    name = fields.Str()
+    description = fields.Str()
+    monitor = fields.Boolean()
