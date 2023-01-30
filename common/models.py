@@ -53,6 +53,9 @@ class Stream(Model):
     name = dbfields.CharField(max_length=50)
     initiated = dbfields.BooleanField(default=False)
 
+    class Meta:
+        unknown = EXCLUDE
+
 
 class StreamValidation(Schema):
     org_id = fields.Int(load_default=1)
@@ -75,7 +78,7 @@ class StreamsFlows(Model):
     error = dbfields.CharField(null=True, max_length=1000)
 
 
-class StreamsFlowsValidation(Schema):
+class RiverValidation(Schema):
     org_id = fields.Int(load_default=1)
     stream_id = fields.Int(required=True)
     flow_id = fields.Int(required=True)

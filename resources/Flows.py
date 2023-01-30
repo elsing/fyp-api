@@ -11,19 +11,16 @@ from sanic_jwt.decorators import scoped
 from marshmallow import ValidationError
 # from argon2 import PasswordHasher
 from common.models import Flow, FlowCreateValidation, FlowModifyValidation
-from common.errors import DBAccessError, UnauthorisedError
+from common.errors import DBAccessError, BadRequestError
 from common.payloader import getData
 from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
 
 
-def flowObjGenerator(flow):
-    flowObj = {flow[0]: {}}
-    values = [{'org_id': flow[1]}, {'stream_id': flow[2]}, {'name': flow[3]}, {
-        'protocol': flow[4]}, {'port': flow[5]}, {'status': flow[6]}, {'to': flow[7]}]
-    for value in values:
-        flowObj[flow[0]].update(value)
-    return flowObj
+def flowNotNull(flow):
+    if flow == "":
+        raise SanicException(
+            "Flow not specified...! Use /flows(s)/FLOW", status_code=404)
 
 
 class APIFlows(Resource):
@@ -38,7 +35,7 @@ class APIFlows(Resource):
             else:
                 flows = await Flow.filter(flow_id=flow_id).get_or_none().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key")
         except ValueError:
-            raise SanicException("Bad request...! :( 🔍", status_code=400)
+            raise BadRequestError
         except:
             raise DBAccessError
 
@@ -49,7 +46,7 @@ class APIFlows(Resource):
         raise SanicException(
             "That flow was not found...! :( 🔍", status_code=404)
 
-    async def post(self, request):
+    async def post(self, request, flow_id=""):
         # Get user_id from request
         user_data = await getData(request)
         user_id = user_data["user_id"]
@@ -78,10 +75,8 @@ class APIFlows(Resource):
             input["name"], user_id))
         return json("Flow added! ✅", status=201)
 
-    async def patch(self, request, flow_id):
-        # Get user_id from request
-        print(request.json)
-
+    async def patch(self, request, flow_id=""):
+        flowNotNull(flow_id)
         # Validate request
         try:
             input = FlowModifyValidation().load(request.json)
@@ -89,8 +84,7 @@ class APIFlows(Resource):
             raise SanicException("Error: {}".format(
                 err.messages), status_code=400)
 
-        print(input)
-        # Create Flow
+        # Update Flow
         try:
             # newFlow = Flow(org_id_id=input['org_id'], stream_id_id=input["stream_id"], name=input["name"],
             #    created_by_id = user_id, protocol = input["protocol"], port = input["port"], status = input["status"], to = input["to"])
@@ -100,12 +94,12 @@ class APIFlows(Resource):
             raise DBAccessError
 
         # Log Flow creation and return response
-        logger.info("Flow updated ")
+        logger.info("Flow updated")
         return json("Flow updated! ✅", status=201)
 
-    async def delete(self, request, flow_id):
+    async def delete(self, request, flow_id=""):
+        flowNotNull(flow_id)
         # Delete Flow
-
         try:
             await Flow.filter(flow_id=flow_id).delete()
         except:
