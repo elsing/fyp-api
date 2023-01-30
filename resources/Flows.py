@@ -1,4 +1,5 @@
 
+import uuid
 import bcrypt
 import json as jsonmod
 from sanic_restful_api import Resource
@@ -33,13 +34,14 @@ class APIFlows(Resource):
 
         try:
             if flow_id == "all":
-                flows = await Flow.all().values("flow_id", "org_id_id", "name", "status", "description", "monitor")
+                flows = await Flow.all().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key")
             else:
-                flows = await Flow.filter(flow_id=flow_id).get_or_none().values("flow_id", "org_id_id", "name", "status", "description", "monitor")
+                flows = await Flow.filter(flow_id=flow_id).get_or_none().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key")
         except ValueError:
             raise SanicException("Bad request...! :( 🔍", status_code=400)
         except:
             raise DBAccessError
+
         # Return JSON of all flows, unless one is specified
         if flows:
             return flows
@@ -67,14 +69,14 @@ class APIFlows(Resource):
             # newFlow = Flow(org_id_id=input['org_id'], stream_id_id=input["stream_id"], name=input["name"],
             #    created_by_id = user_id, protocol = input["protocol"], port = input["port"], status = input["status"], to = input["to"])
             # await newFlow.save(using_db="default")
-            await Flow.create(org_id_id=input['org_id'], name=input["name"], created_by_id=user_id, status=input["status"], description=input["description"], monitor=input["monitor"])
+            await Flow.create(org_id_id=input['org_id'], name=input["name"], created_by_id=user_id, status=input["status"], description=input["description"], monitor=input["monitor"], api_key=uuid.uuid4())
         except:
             raise DBAccessError
 
         # Log Flow creation and return response
         logger.info("Flow added with name: {} by user_id: ".format(
             input["name"], user_id))
-        return text("Flow added! ✅", status=201)
+        return json("Flow added! ✅", status=201)
 
     async def patch(self, request, flow_id):
         # Get user_id from request
@@ -99,7 +101,16 @@ class APIFlows(Resource):
 
         # Log Flow creation and return response
         logger.info("Flow updated ")
-        return text("Flow updated! ✅", status=201)
+        return json("Flow updated! ✅", status=201)
 
-    async def delete(self, request):
-        pass
+    async def delete(self, request, flow_id):
+        # Delete Flow
+
+        try:
+            await Flow.filter(flow_id=flow_id).delete()
+        except:
+            raise DBAccessError
+
+        # Log Flow deletion and return response
+        logger.info("DELETE flow request for '{}'".format(flow_id))
+        return json("Flow deleted! ✅", status=201)

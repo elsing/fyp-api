@@ -1,7 +1,7 @@
 from tortoise import Model
 from tortoise import fields as dbfields
 from tortoise.validators import RegexValidator
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, EXCLUDE
 import re
 
 
@@ -97,6 +97,7 @@ class Flow(Model):
     status = dbfields.CharField(max_length=10, default="init")
     description = dbfields.CharField(max_length=255, null=True, default="")
     monitor = dbfields.BooleanField(default=True)
+    api_key = dbfields.CharField(max_length=36)
 
 
 class FlowCreateValidation(Schema):
@@ -111,3 +112,6 @@ class FlowModifyValidation(Schema):
     name = fields.Str()
     description = fields.Str()
     monitor = fields.Boolean()
+
+    class Meta:
+        unknown = EXCLUDE
