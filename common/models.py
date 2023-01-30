@@ -47,9 +47,9 @@ class UserValidation(Schema):
     permission = fields.Str(load_default="default")
 
 
-class Stream(Model):
-    stream_id = dbfields.IntField(pk=True)
-    org_id = dbfields.ForeignKeyField("models.Org", related_name="streams")
+class River(Model):
+    river_id = dbfields.IntField(pk=True)
+    org_id = dbfields.ForeignKeyField("models.Org", related_name="rivers")
     name = dbfields.CharField(max_length=50)
     initiated = dbfields.BooleanField(default=False)
 
@@ -57,18 +57,18 @@ class Stream(Model):
         unknown = EXCLUDE
 
 
-class StreamValidation(Schema):
+class RiverValidation(Schema):
     org_id = fields.Int(load_default=1)
     name = fields.Str(required=True)
     initiated = fields.Bool(load_default=False)
 
 
-class StreamsFlows(Model):
+class Stream(Model):
     id = dbfields.IntField(pk=True)
     org_id = dbfields.ForeignKeyField(
-        "models.Org", related_name="streamsflows")
-    stream_id = dbfields.ForeignKeyField(
-        "models.Stream", related_name="streams")
+        "models.Org", related_name="streams")
+    river_id = dbfields.ForeignKeyField(
+        "models.River", related_name="rivers")
     flow_id = dbfields.ForeignKeyField("models.Flow", related_name="flows")
     role = dbfields.CharField(default="client", max_length=6)
     protocol = dbfields.CharField(max_length=10, default="wireguard")
@@ -78,9 +78,9 @@ class StreamsFlows(Model):
     error = dbfields.CharField(null=True, max_length=1000)
 
 
-class RiverValidation(Schema):
+class StreamValidation(Schema):
     org_id = fields.Int(load_default=1)
-    stream_id = fields.Int(required=True)
+    river_id = fields.Int(required=True)
     flow_id = fields.Int(required=True)
     role = fields.Str(load_default="client")
     protocol = fields.Str(load_default="wireguard")
