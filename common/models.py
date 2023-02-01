@@ -52,9 +52,7 @@ class River(Model):
     org_id = dbfields.ForeignKeyField("models.Org", related_name="rivers")
     name = dbfields.CharField(max_length=50)
     initiated = dbfields.BooleanField(default=False)
-
-    class Meta:
-        unknown = EXCLUDE
+    # Maybe add created by??
 
 
 class RiverValidation(Schema):
@@ -62,37 +60,49 @@ class RiverValidation(Schema):
     name = fields.Str(required=True)
     initiated = fields.Bool(load_default=False)
 
+    class Meta:
+        unknown = EXCLUDE
+
 
 class Stream(Model):
-    id = dbfields.IntField(pk=True)
+    stream_id = dbfields.IntField(pk=True)
     org_id = dbfields.ForeignKeyField(
         "models.Org", related_name="streams")
     river_id = dbfields.ForeignKeyField(
         "models.River", related_name="rivers")
+    protocol = dbfields.CharField(max_length=10, default="wireguard")
+
+
+class StreamValidation(Schema):
+    org_id = fields.Int(load_default=1)
+    river_id = fields.Int(required=True)
+    protocol = fields.Str(load_default="wireguard")
+
+
+class StreamFlow(Model):
+    stream_id = dbfields.ForeignKeyField(
+        "models.Stream", related_name="streams")
     flow_id = dbfields.ForeignKeyField("models.Flow", related_name="flows")
     role = dbfields.CharField(default="client", max_length=6)
-    protocol = dbfields.CharField(max_length=10, default="wireguard")
     port = dbfields.IntField(max_length=5, default=51820)
     config = dbfields.CharField(null=True, max_length=1000)
     tunnel = dbfields.CharField(null=True, max_length=1000)
     error = dbfields.CharField(null=True, max_length=1000)
 
 
-class StreamValidation(Schema):
-    org_id = fields.Int(load_default=1)
-    river_id = fields.Int(required=True)
+class StreamFlowValidation(Schema):
+    stream_id = fields.Int(required=True)
     flow_id = fields.Int(required=True)
     role = fields.Str(load_default="client")
-    protocol = fields.Str(load_default="wireguard")
     port = fields.Int(load_default=51820)
-    config = fields.Str()
-    tunnel = fields.Str()
-    error = fields.Str()
+    config = fields.Str(load_default="")
+    tunnel = fields.Str(load_default="")
+    error = fields.Str(load_default="")
 
 
 class Flow(Model):
     flow_id = dbfields.IntField(pk=True)
-    org_id = dbfields.ForeignKeyField("models.Org", related_name="flows")
+    org_id = dbfields.ForeignKeyField("models.Org", related_name="orgs")
     name = dbfields.CharField(max_length=50)
     create_time = dbfields.DatetimeField(auto_now_add=True)
     created_by = dbfields.ForeignKeyField(
@@ -101,6 +111,7 @@ class Flow(Model):
     description = dbfields.CharField(max_length=255, null=True, default="")
     monitor = dbfields.BooleanField(default=True)
     api_key = dbfields.CharField(max_length=36)
+    locked = dbfields.BooleanField(default=False)
 
 
 class FlowCreateValidation(Schema):
@@ -115,6 +126,7 @@ class FlowModifyValidation(Schema):
     name = fields.Str()
     description = fields.Str()
     monitor = fields.Boolean()
+    locked = fields.Boolean()
 
     class Meta:
         unknown = EXCLUDE

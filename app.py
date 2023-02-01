@@ -8,7 +8,7 @@ from sanic_cors import CORS
 from resources.Users import APIUsers
 from resources.Flows import APIFlows
 from resources.Streams import APIStreams
-from resources.Rivers import APIRivers
+from resources.Rivers import APIRivers, APIRiverFlow
 from tortoise.contrib.sanic import register_tortoise
 from sanic_jwt import Initialize
 from common.models import User
@@ -109,6 +109,9 @@ api.add_resource(APIStreams, '/streams', '/streams/<stream_id>',
 
 api.add_resource(APIRivers, '/rivers', '/rivers/<river_id>',
                  '/river', '/river/<river_id>')
+
+api.add_resource(APIRiverFlow, '/riverflows/<river_id>',
+                 '/riverflow/<river_id>',)
 
 
 @app.route("/auth/logout")

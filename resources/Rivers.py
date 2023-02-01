@@ -1,6 +1,6 @@
 
 from sanic_restful_api import Resource
-from sanic import text
+from sanic import json
 from sanic.log import logger
 from sanic.exceptions import SanicException
 from sanic_jwt.decorators import protected
@@ -17,6 +17,28 @@ def riverNotNull(river):
     if river == "":
         raise SanicException(
             "River not specified...! Use /river(s)/RIVER", status_code=404)
+
+
+class APIRiverFlow(Resource):
+    method_decorators = [protected()]
+
+    async def get(self, request, river_id=""):
+        riverNotNull(river_id)
+
+        logger.info("GET river request for '{}'".format(river_id))
+
+        try:
+            rivers = await River.filter(river_id=river_id).get_or_none().annotate()
+
+        except ValueError:
+            raise BadRequestError
+        except:
+            raise DBAccessError
+
+        print("Rivers: {}".format(rivers))
+
+        if rivers:
+            return rivers
 
 
 class APIRivers(Resource):
@@ -68,7 +90,7 @@ class APIRivers(Resource):
 
         # Log river creation and return response
         logger.info("River added with name: {}".format(input["name"]))
-        return text("River added! ✅", status=201)
+        return json("River added! ✅", status=201)
 
     async def patch(self, request, river_id=""):
         riverNotNull(river_id)
@@ -81,14 +103,13 @@ class APIRivers(Resource):
 
         # Update river
         try:
-            await River.filter(river_id=river_id).update(name=input["name"],
-                                                         initiated=input["initiated"])
+            await River.filter(river_id=river_id).update(name=input["name"], initiated=input["initiated"])
         except:
             raise DBAccessError
 
         # Log river update and return response
         logger.info("River updated")
-        return text("River updated! ✅", status=201)
+        return json("River updated! ✅", status=201)
 
     async def delete(self, request, river_id=""):
         riverNotNull(river_id)
@@ -100,4 +121,4 @@ class APIRivers(Resource):
 
         # Log river deletion and return response
         logger.info("DELETE river request for '{}'".format(river_id))
-        return text("River deleted! ✅", status=201)
+        return json("River deleted! ✅", status=201)

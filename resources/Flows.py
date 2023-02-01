@@ -31,9 +31,9 @@ class APIFlows(Resource):
 
         try:
             if flow_id == "all":
-                flows = await Flow.all().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key")
+                flows = await Flow.all().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key", "locked")
             else:
-                flows = await Flow.filter(flow_id=flow_id).get_or_none().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key")
+                flows = await Flow.filter(flow_id=flow_id).get_or_none().values("flow_id", "org_id_id", "name", "status", "description", "monitor", "api_key", "locked")
         except ValueError:
             raise BadRequestError
         except:
@@ -66,7 +66,7 @@ class APIFlows(Resource):
             # newFlow = Flow(org_id_id=input['org_id'], stream_id_id=input["stream_id"], name=input["name"],
             #    created_by_id = user_id, protocol = input["protocol"], port = input["port"], status = input["status"], to = input["to"])
             # await newFlow.save(using_db="default")
-            await Flow.create(org_id_id=input['org_id'], name=input["name"], created_by_id=user_id, status=input["status"], description=input["description"], monitor=input["monitor"], api_key=uuid.uuid4())
+            await Flow.create(org_id_id=input["org_id"], name=input["name"], created_by_id=user_id, status=input["status"], description=input["description"], monitor=input["monitor"], api_key=uuid.uuid4())
         except:
             raise DBAccessError
 
@@ -89,7 +89,7 @@ class APIFlows(Resource):
             # newFlow = Flow(org_id_id=input['org_id'], stream_id_id=input["stream_id"], name=input["name"],
             #    created_by_id = user_id, protocol = input["protocol"], port = input["port"], status = input["status"], to = input["to"])
             # await newFlow.save(using_db="default")
-            await Flow.filter(flow_id=flow_id).update(name=input["name"], description=input["description"], monitor=input["monitor"])
+            await Flow.filter(flow_id=flow_id).update(name=input["name"], description=input["description"], monitor=input["monitor"], locked=input["locked"])
         except:
             raise DBAccessError
 
