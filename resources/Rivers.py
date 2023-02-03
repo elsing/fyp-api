@@ -8,10 +8,10 @@ from sanic_jwt.decorators import protected
 from sanic_jwt.decorators import scoped
 from marshmallow import ValidationError
 # from argon2 import PasswordHasher
-from common.models import River, RiverValidation
+from common.models import Stream, River, RiverValidation
 from common.errors import DBAccessError, BadRequestError
-from tortoise.expressions import Q
-from tortoise.exceptions import DoesNotExist
+from tortoise.exceptions import OperationalError
+from tortoise.transactions import atomic
 
 from common.payloader import getData
 
@@ -77,3 +77,22 @@ class APIRivers(Resource):
 
     async def delete(self, request, river_id=""):
         riverNotNull(river_id)
+
+        # Delete River tranasactionally
+
+        @atomic()
+        async def delete_delta():
+            await Stream.filter(river_id=river_id).all().delete()
+            await River.filter(river_id=river_id).delete()
+
+        try:
+            await delete_delta()
+        except OperationalError as e:
+            raise SanicException(
+                "Delete failed. Error:{}".format(e), status_code=500)
+        except:
+            raise DBAccessError
+
+        # Log delta deletion and return response
+        logger.info("DELETE River request for '{}'".format(river_id))
+        return json("River deleted! ✅", status=201)

@@ -113,7 +113,7 @@ class APIDeltas(Resource):
     async def delete(self, request, delta_id=""):
         deltaNotNull(delta_id)
 
-        # Delete delta tranasactionally
+        # Delete Delta tranasactionally
 
         @atomic()
         async def delete_delta():
@@ -133,5 +133,5 @@ class APIDeltas(Resource):
             raise DBAccessError
 
         # Log delta deletion and return response
-        logger.info("DELETE delta request for '{}'".format(delta_id))
+        logger.info("DELETE Delta request for '{}'".format(delta_id))
         return json("Delta deleted! ✅", status=201)
