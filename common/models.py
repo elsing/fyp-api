@@ -47,15 +47,15 @@ class UserValidation(Schema):
     permission = fields.Str(load_default="default")
 
 
-class River(Model):
-    river_id = dbfields.IntField(pk=True)
-    org_id = dbfields.ForeignKeyField("models.Org", related_name="rivers")
+class Delta(Model):
+    delta_id = dbfields.IntField(pk=True)
+    org_id = dbfields.ForeignKeyField("models.Org", related_name="deltas")
     name = dbfields.CharField(max_length=50)
     initiated = dbfields.BooleanField(default=False)
     # Maybe add created by??
 
 
-class RiverValidation(Schema):
+class DeltaValidation(Schema):
     org_id = fields.Int(load_default=1)
     name = fields.Str(required=True)
     initiated = fields.Bool(load_default=False)
@@ -64,45 +64,9 @@ class RiverValidation(Schema):
         unknown = EXCLUDE
 
 
-class Stream(Model):
-    stream_id = dbfields.IntField(pk=True)
-    org_id = dbfields.ForeignKeyField(
-        "models.Org", related_name="streams")
-    river_id = dbfields.ForeignKeyField(
-        "models.River", related_name="rivers")
-    protocol = dbfields.CharField(max_length=10, default="wireguard")
-
-
-class StreamValidation(Schema):
-    org_id = fields.Int(load_default=1)
-    river_id = fields.Int(required=True)
-    protocol = fields.Str(load_default="wireguard")
-
-
-class StreamFlow(Model):
-    stream_id = dbfields.ForeignKeyField(
-        "models.Stream", related_name="streams")
-    flow_id = dbfields.ForeignKeyField("models.Flow", related_name="flows")
-    role = dbfields.CharField(default="client", max_length=6)
-    port = dbfields.IntField(max_length=5, default=51820)
-    config = dbfields.CharField(null=True, max_length=1000)
-    tunnel = dbfields.CharField(null=True, max_length=1000)
-    error = dbfields.CharField(null=True, max_length=1000)
-
-
-class StreamFlowValidation(Schema):
-    stream_id = fields.Int(required=True)
-    flow_id = fields.Int(required=True)
-    role = fields.Str(load_default="client")
-    port = fields.Int(load_default=51820)
-    config = fields.Str(load_default="")
-    tunnel = fields.Str(load_default="")
-    error = fields.Str(load_default="")
-
-
 class Flow(Model):
     flow_id = dbfields.IntField(pk=True)
-    org_id = dbfields.ForeignKeyField("models.Org", related_name="orgs")
+    org_id = dbfields.ForeignKeyField("models.Org", related_name="flows")
     name = dbfields.CharField(max_length=50)
     create_time = dbfields.DatetimeField(auto_now_add=True)
     created_by = dbfields.ForeignKeyField(
@@ -112,6 +76,11 @@ class Flow(Model):
     monitor = dbfields.BooleanField(default=True)
     api_key = dbfields.CharField(max_length=36)
     locked = dbfields.BooleanField(default=False)
+
+    streams: dbfields.ReverseRelation["Stream"]
+
+    def __str__(self):
+        return self.name
 
 
 class FlowCreateValidation(Schema):
@@ -130,3 +99,47 @@ class FlowModifyValidation(Schema):
 
     class Meta:
         unknown = EXCLUDE
+
+
+class River(Model):
+    river_id = dbfields.IntField(pk=True)
+    # org_id = dbfields.ForeignKeyField(
+    # "models.Org", related_name="rivers")
+    delta: dbfields.ForeignKeyRelation[Delta] = dbfields.ForeignKeyField(
+        "models.Delta", related_name="deltas")
+    name = dbfields.CharField(max_length=20)
+    protocol = dbfields.CharField(max_length=10, default="wireguard")
+
+
+class RiverValidation(Schema):
+    # org_id = fields.Int(load_default=1)
+    delta_id = fields.Int(required=True)
+    name = fields.Str(required=True)
+    protocol = fields.Str(required=True)
+
+
+class Stream(Model):
+    stream_id = dbfields.IntField(pk=True)
+    # flow_id = dbfields.ForeignKeyField("models.Flow", related_name="flows")
+    flow: dbfields.ForeignKeyRelation[Flow] = dbfields.ForeignKeyField(
+        "models.Flow", related_name="streams")
+    river: dbfields.ForeignKeyRelation[River] = dbfields.ForeignKeyField(
+        "models.River", related_name="rivers")
+    role = dbfields.CharField(default="client", max_length=6)
+    port = dbfields.IntField(max_length=5, default=51820)
+    config = dbfields.CharField(null=True, max_length=1000)
+    tunnel = dbfields.CharField(null=True, max_length=1000)
+    error = dbfields.CharField(null=True, max_length=1000)
+
+    def __str__(self):
+        return str(self.stream_id)
+
+
+class StreamValidation(Schema):
+    stream_id = fields.Int(required=True)
+    flow_id = fields.Int(required=True)
+    role = fields.Str(load_default="client")
+    port = fields.Int(load_default=51820)
+    config = fields.Str(load_default="")
+    tunnel = fields.Str(load_default="")
+    error = fields.Str(load_default="")
