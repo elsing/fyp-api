@@ -24,8 +24,12 @@ class APIDeltaRivers(Resource):
 
     async def get(self, request, delta_id=""):
         deltaNotNull(delta_id)
+        if int(delta_id) == 0:
+            return {}
 
         logger.info("GET delta rivers request for '{}'".format(delta_id))
+
+        print("delta_id", delta_id)
 
         try:
             deltas = await River.filter(delta_id=delta_id).values()

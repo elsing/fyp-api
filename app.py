@@ -13,7 +13,7 @@ from resources.Flows import APIFlows
 from tortoise.contrib.sanic import register_tortoise
 from sanic_jwt import Initialize
 from common.models import User
-from argon2 import PasswordHasher
+# from argon2 import PasswordHasher
 from sanic.log import logger
 
 
@@ -84,7 +84,7 @@ def load_details(payload, user):
 Initialize(
     app,
     authenticate=authenticate,
-    secret="7N3%WZrjj$eDYC7czPyP",
+    secret="7N3%WZrjj$eDYC7czPyP", # This should to changed in production to ENV variable
     add_scopes_to_payload=scope_extender,
     extend_payload=load_details,
     access_token_name="auth_token",
@@ -132,3 +132,4 @@ async def test(request):
 
 if __name__ == '__main__':
     app.run(dev=True, host="0.0.0.0", port=8000, workers=1)
+    # app.run(host="0.0.0.0", port=8000, workers=1)

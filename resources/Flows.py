@@ -11,7 +11,7 @@ from sanic_jwt.decorators import scoped
 from marshmallow import ValidationError
 # from argon2 import PasswordHasher
 from common.models import Flow, FlowCreateValidation, FlowModifyValidation
-from common.errors import DBAccessError, BadRequestError
+from common.errors import DBAccessError, BadRequestError, NoFlowError
 from common.payloader import getData
 from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
@@ -43,8 +43,7 @@ class APIFlows(Resource):
         if flows:
             return flows
         # Raise if not found
-        raise SanicException(
-            "That flow was not found...! :( 🔍", status_code=404)
+        raise NoFlowError
 
     async def post(self, request, flow_id=""):
         # Get user_id from request
@@ -84,12 +83,21 @@ class APIFlows(Resource):
             raise SanicException("Error: {}".format(
                 err.messages), status_code=400)
 
+        print(input)
+        print
+
         # Update Flow
+        # Temporary fix in place
         try:
-            # newFlow = Flow(org_id_id=input['org_id'], stream_id_id=input["stream_id"], name=input["name"],
-            #    created_by_id = user_id, protocol = input["protocol"], port = input["port"], status = input["status"], to = input["to"])
-            # await newFlow.save(using_db="default")
-            await Flow.filter(flow_id=flow_id).update(name=input["name"], description=input["description"], monitor=input["monitor"], locked=input["locked"])
+            flow = await Flow.filter(flow_id=flow_id).get_or_none()
+            if not flow:
+                raise
+        except:
+            raise NoFlowError
+
+        try:
+            if flow:
+                await Flow.filter(flow_id=flow_id).update(name=input["name"], description=input["description"], monitor=input["monitor"], locked=input["locked"])
         except:
             raise DBAccessError
 

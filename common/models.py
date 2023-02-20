@@ -1,7 +1,7 @@
 from tortoise import Model
 from tortoise import fields as dbfields
 from tortoise.validators import RegexValidator
-from marshmallow import Schema, fields, EXCLUDE
+from marshmallow import Schema, fields, EXCLUDE, validate
 import re
 
 
@@ -87,7 +87,8 @@ class FlowCreateValidation(Schema):
     org_id = fields.Int(load_default=1)
     name = fields.Str(required=True)
     status = fields.Str(load_default="init")
-    description = fields.Str(load_default="")
+    description = fields.Str(
+        load_default="", validate=validate.Length(max=255))
     monitor = fields.Boolean(load_default=True)
 
 

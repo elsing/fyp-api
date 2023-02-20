@@ -17,3 +17,8 @@ class BadRequestError(SanicException):
     message = "Bad request...! :( 🔍"
     status_code = 400
     quiet = False
+
+class NoFlowError(SanicException):
+    message = "That flow was not found...! :( 🔍"
+    status_code = 404
+    quiet = True

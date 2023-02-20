@@ -32,12 +32,10 @@ class APIRivers(Resource):
         logger.info("GET river request for '{}'".format(river_id))
 
         # temp = await River.filter(river_id=1).prefetch_related("flow_id").values()
-        temp = await River.raw("SELECT * FROM river INNER JOIN flow ON river.flow_id_id = flow.flow_id WHERE river.river_id_id = 1")
-
-        return
+        # temp = await River.raw("SELECT * FROM river INNER JOIN flow ON river.flow_id_id = flow.flow_id WHERE river.river_id_id = 1")
 
         try:
-            river = await River.filter(river_id_id=river_id).all().values()
+            river = await River.filter(river_id=river_id).all().values()
         except ValueError:
             raise BadRequestError
         except:
@@ -78,6 +76,9 @@ class APIRivers(Resource):
     async def delete(self, request, river_id=""):
         riverNotNull(river_id)
 
+        # Log request
+        logger.info("DELETE River request for '{}'".format(river_id))
+
         # Delete River tranasactionally
 
         @atomic()
@@ -94,5 +95,4 @@ class APIRivers(Resource):
             raise DBAccessError
 
         # Log delta deletion and return response
-        logger.info("DELETE River request for '{}'".format(river_id))
         return json("River deleted! ✅", status=201)

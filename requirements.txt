@@ -1,0 +1,10 @@
+sanic
+sanic_restful_api 
+marshmallow
+aiomysql
+# uvloop 
+tortoise-orm[mysql]
+sanic-jwt
+sanic-ext
+sanic-cors
+bcrypt
