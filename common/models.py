@@ -126,9 +126,12 @@ class Stream(Model):
         "models.Flow", related_name="streams")
     river: dbfields.ForeignKeyRelation[River] = dbfields.ForeignKeyField(
         "models.River", related_name="rivers")
+    name = dbfields.CharField(max_length=20)
     role = dbfields.CharField(default="client", max_length=6)
     port = dbfields.IntField(max_length=5, default=51820)
     config = dbfields.CharField(null=True, max_length=1000)
+    public_key = dbfields.CharField(null=True, max_length=1000)
+    ip = dbfields.CharField(null=True, max_length=16)
     tunnel = dbfields.CharField(null=True, max_length=1000)
     error = dbfields.CharField(null=True, max_length=1000)
 
@@ -137,10 +140,13 @@ class Stream(Model):
 
 
 class StreamValidation(Schema):
-    stream_id = fields.Int(required=True)
     flow_id = fields.Int(required=True)
-    role = fields.Str(load_default="client")
+    river_id = fields.Int(required=True)
+    name = fields.Str(required=True)
+    role = fields.Str(required=True)
     port = fields.Int(load_default=51820)
     config = fields.Str(load_default="")
-    tunnel = fields.Str(load_default="")
+    public_key = fields.Str(load_default="")
+    ip = fields.Str(load_default="")
+    tunnel = fields.Str(required=True)
     error = fields.Str(load_default="")

@@ -22,6 +22,27 @@ def riverNotNull(river):
             "River not specified...! Use /river(s)/RIVER", status_code=404)
 
 
+class APIRiversStreams(Resource):
+    method_decorators = [protected()]
+
+    async def get(self, request, river_id=""):
+        riverNotNull(river_id)
+
+        logger.info("GET river streams request for '{}'".format(river_id))
+
+        try:
+            streams = await Stream.filter(river_id=river_id).values()
+        except ValueError:
+            raise BadRequestError
+        except:
+            raise DBAccessError
+
+        if streams:
+            return streams
+        raise SanicException(
+            "That River's Streams were not found...! :( 🔍", status_code=404)
+
+
 class APIRivers(Resource):
     method_decorators = [protected()]
 

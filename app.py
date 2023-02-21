@@ -1,5 +1,5 @@
 import bcrypt
-from sanic import Sanic
+from sanic import Sanic, Websocket, Request
 from sanic.response import text, json, empty
 from sanic.exceptions import SanicException
 from sanic_restful_api import Resource, Api
@@ -7,7 +7,7 @@ from sanic_ext import Extend, cors
 from sanic_cors import CORS
 from resources.Users import APIUsers
 from resources.Deltas import APIDeltas, APIDeltaRivers
-from resources.Rivers import APIRivers
+from resources.Rivers import APIRivers, APIRiversStreams
 from resources.Streams import APIStreams
 from resources.Flows import APIFlows
 from tortoise.contrib.sanic import register_tortoise
@@ -15,6 +15,7 @@ from sanic_jwt import Initialize
 from common.models import User
 # from argon2 import PasswordHasher
 from sanic.log import logger
+from resources.Daemons import DaemonWSS
 
 
 class AuthError(SanicException):
@@ -84,7 +85,8 @@ def load_details(payload, user):
 Initialize(
     app,
     authenticate=authenticate,
-    secret="7N3%WZrjj$eDYC7czPyP", # This should to changed in production to ENV variable
+    # This should to changed in production to ENV variable
+    secret="7N3%WZrjj$eDYC7czPyP",
     add_scopes_to_payload=scope_extender,
     extend_payload=load_details,
     access_token_name="auth_token",
@@ -105,17 +107,36 @@ api.add_resource(APIUsers, '/users', '/users/<username>',
 api.add_resource(APIDeltas, '/deltas', '/deltas/<delta_id>',
                  '/delta', '/delta/<delta_id>')
 
-api.add_resource(APIDeltaRivers, '/deltasrivers', '/deltasrivers/<delta_id>',
-                 '/deltarivers', '/deltarivers/<delta_id>')
+api.add_resource(APIDeltaRivers, '/delta/<delta_id>/rivers',
+                 '/deltas/<delta_id>/rivers')
 
 api.add_resource(APIRivers, '/rivers', '/rivers/<river_id>',
                  '/river', '/river/<river_id>',)
+
+api.add_resource(APIRiversStreams, '/river/<river_id>/streams',
+                 '/rivers/<river_id>/streams')
 
 api.add_resource(APIFlows, '/flows', '/flows/<flow_id>',
                  '/flow', '/flow/<flow_id>')
 
 api.add_resource(APIStreams, '/streams', '/streams/<stream_id>',
                  '/stream', '/stream/<stream_id>')
+
+
+async def online_handler(request: Request, ws: Websocket):
+    while True:
+        data = "hello!"
+        print("Sending: " + data)
+        await ws.send(data)
+        data = await ws.recv()
+        print("Received: " + data)
+
+# app.websocket('/websocket', online_handler)
+
+
+@app.websocket("/websocket")
+async def websocket_handler(request, ws: Websocket):
+    await DaemonWSS(request, ws)
 
 
 @app.route("/auth/logout")

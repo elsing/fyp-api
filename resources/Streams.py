@@ -1,5 +1,8 @@
 import bcrypt
 import json as jsonmod
+import base64
+import wgconfig.wgexec as wgexec
+import wireguard
 from sanic_restful_api import Resource
 from sanic import text, json
 from sanic.log import logger
@@ -12,6 +15,7 @@ from common.models import Stream, StreamValidation, Org
 from common.errors import DBAccessError, BadRequestError
 from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
+
 
 from common.payloader import getData
 
@@ -69,8 +73,12 @@ class APIStreams(Resource):
 
         print(input)
 
+        # print(wgexec.generate_keypair())
+        print(wireguard.generate_keypair())
+
         try:
-            await Stream.create(org_id_id=input["org_id"], stream_id_id=input["stream_id"], flow_id_id=input["flow_id"], role=input["role"], protocol=input["protocol"], port=input["port"], config=input["config"], tunnel=input["tunnel"], error=input["error"])
+            # await Stream.create(flow_id=input["flow_id"], river_id=input["river_id"], name=input["name"], role=input["role"], port=input["port"], config=input["config"], tunnel=input["tunnel"], error=input["error"])
+            pass
         except:
             raise DBAccessError
 
