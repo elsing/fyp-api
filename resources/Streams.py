@@ -1,6 +1,7 @@
 import bcrypt
 import json as jsonmod
 import base64
+import wgconfig
 import wgconfig.wgexec as wgexec
 import wireguard
 from sanic_restful_api import Resource
@@ -11,13 +12,21 @@ from sanic_jwt.decorators import protected
 from sanic_jwt.decorators import scoped
 from marshmallow import ValidationError
 # from argon2 import PasswordHasher
-from common.models import Stream, StreamValidation, Org
+from common.models import Stream, StreamValidation, River
 from common.errors import DBAccessError, BadRequestError
 from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
 
 
 from common.payloader import getData
+
+
+def getServerConfig(server):
+    with open(".configs/wg-temp.conf", "w") as config_file:
+        config_file.write(server["config"])
+    wc = wgconfig.WGConfig(".configs/wg-temp.conf")
+    wc.read_file()
+    return wc
 
 
 def streamNotNull(stream):
@@ -71,13 +80,84 @@ class APIStreams(Resource):
             raise SanicException("Error: {}".format(
                 err.messages), status_code=400)
 
-        print(input)
-
-        # print(wgexec.generate_keypair())
-        # print(wireguard.generate_keypair())
-
+        # Pre checks
         try:
-            await Stream.create(flow_id=input["flow_id"], river_id=input["river_id"], name=input["name"], role=input["role"], port=input["port"], config=input["config"], tunnel=input["tunnel"], error=input["error"])
+            existing_server = await Stream.filter(river_id=input["river_id"]).filter(role="server").get_or_none()
+            if existing_server:
+                if input["role"] == "server":
+                    raise SanicException(
+                        "Error: A server already exists for this river", status_code=400)
+            else:
+                if input["role"] == "client":
+                    raise SanicException(
+                        "Error: A server must be created first", status_code=400)
+            protocol = await River.filter(river_id=input["river_id"]).get().values_list("protocol", flat=True)
+        except SanicException as err:
+            raise err
+        except:
+            raise DBAccessError
+
+        # Generate VPN config
+        if protocol == "wireguard":
+            # Set Interface options
+            private_key, public_key = wgexec.generate_keypair()
+            wc = wgconfig.WGConfig(
+                ".configs/wg-generating.conf")
+            wc.add_attr(None, "Address", input["ip"])
+            if input["role"] == "client":
+                # or input["role"] != "client":
+                if input["port"] != 51820:
+                    wc.add_attr(None, 'ListenPort', input["port"])
+            else:
+                wc.add_attr(None, 'ListenPort', input["port"])
+            wc.add_attr(None, "PrivateKey", private_key)
+            # Generate client config
+            if input["role"] == "client":
+                psk = wgexec.generate_presharedkey()
+                try:
+                    server = await Stream.filter(river_id=input["river_id"]).filter(role="server").get().values()
+
+                except:
+                    raise DBAccessError
+                wc.add_peer(server["public_key"])
+                wc.add_attr(
+                    server["public_key"], "PresharedKey", psk)
+                endpoint = server["endpoint"]+":"+str(server["port"])
+                wc.add_attr(server["public_key"],
+                            "Endpoint", endpoint)
+                wc.add_attr(server["public_key"],
+                            "AllowedIPs", input["tunnel"])
+                wc.add_attr(server["public_key"],
+                            "PersistentKeepalive", 25)
+
+                # Add peer to server config
+                server_file = getServerConfig(server)
+                server_file.add_peer(public_key)
+                server_file.add_attr(public_key, "PresharedKey", psk)
+                server_file.add_attr(
+                    public_key, "AllowedIPs", input["tunnel"])
+                server_file.write_file()
+                server_file = wgconfig.WGConfig(".configs/wg_srv.conf")
+                with open(".configs/wg-temp.conf", "r") as server_file:
+                    server_config = server_file.read()
+                    # Update DB with new config
+                    try:
+                        await Stream.filter(river_id=input["river_id"]).filter(role="server").update(config=server_config)
+                    except:
+                        raise DBAccessError
+            # Write file
+            wc.write_file()
+
+            # Read the file to get the config
+            with open(".configs/wg-generating.conf", "r") as config_file:
+                config = config_file.read()
+
+        else:
+            raise SanicException(
+                "Error: Protocol not supported yet", status_code=400)
+        try:
+            await Stream.create(flow_id=input["flow_id"], river_id=input["river_id"], name=input["name"], role=input["role"], port=input["port"], config=config, public_key=public_key, ip=input["ip"], endpoint=input["endpoint"], tunnel=input["tunnel"], error=input["error"])
+            pass
         except:
             raise DBAccessError
 

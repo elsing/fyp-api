@@ -4,6 +4,7 @@ from sanic import json as sanic_json, Websocket
 from sanic.exceptions import WebsocketClosed
 from time import sleep
 import ujson
+import json
 
 
 async def authorisation(ws, api_key, scheduler, firstLoad=False):
@@ -56,7 +57,7 @@ async def getStream(ws, api_key, scheduler, flow):
             response = ["streams", streams]
             await ws.send(ujson.dumps(response))
         else:
-            await ws.send("No Streams defined yet.")
+            await ws.send(ujson.dumps(["info", "No Streams defined yet."]))
     except Exception as e:
         print("Internal Error:", e)
 
@@ -84,14 +85,22 @@ async def DaemonWSS(request, ws: Websocket):
     try:
         scheduler.start()
         try:
-            await ws.send(ujson.dumps(["welcome", "Hello Flow... {}".format(flowDetails["name"])]))
+            await ws.send(ujson.dumps(["info", "Hello Flow... {}".format(flowDetails["name"])]))
         except Exception as e:
             print("Error: ", e)
             await ws.send("Hello Flow...")
         while True:
             # api_key = request.headers["api_key"]
             data = await ws.recv()
-            await ws.send("Recieved: {}".format(data))
+            data = json.loads(data)
+            if data["cmd"] == "patch":
+                try:
+                    await Stream.filter(stream_id=data["id"]).update(initiated=data["info"])
+                except:
+                    await ws.send("Error: Internal Server Error - Failed to update information.")
+                    print(
+                        "Error: Internal Server Error - Failed to update information for stream: {}".format(data["id"]))
+            # await ws.send("Recieved: {}".format(data))
 
     except Exception as e:
         print("Something", e)
