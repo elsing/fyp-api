@@ -74,11 +74,10 @@ class APIStreams(Resource):
         print(input)
 
         # print(wgexec.generate_keypair())
-        print(wireguard.generate_keypair())
+        # print(wireguard.generate_keypair())
 
         try:
-            # await Stream.create(flow_id=input["flow_id"], river_id=input["river_id"], name=input["name"], role=input["role"], port=input["port"], config=input["config"], tunnel=input["tunnel"], error=input["error"])
-            pass
+            await Stream.create(flow_id=input["flow_id"], river_id=input["river_id"], name=input["name"], role=input["role"], port=input["port"], config=input["config"], tunnel=input["tunnel"], error=input["error"])
         except:
             raise DBAccessError
 

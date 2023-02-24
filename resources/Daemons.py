@@ -1,66 +1,105 @@
-import asyncio
-import json
-import async_timeout
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from common.models import Stream, Flow
 from sanic import json as sanic_json, Websocket
+from sanic.exceptions import WebsocketClosed
 from time import sleep
 import ujson
 
 
-async def authorisation(request, ws):
-    valid = await Flow.filter(api_key=request.headers["api_key"]).get_or_none()
+async def authorisation(ws, api_key, scheduler, firstLoad=False):
+    valid = await Flow.filter(api_key=api_key).get_or_none().values()
     if valid:
-        print("All good!")
+        print("Valid API Key")
+        if firstLoad:
+            if valid["status"] == "online":
+                print("Already Online")
+                await ws.send("Flow already connected.")
+                await ws.close()
+                return False
         return True
     else:
         print("Invalid API Key")
+        scheduler.remove_all_jobs()
         await ws.send("Invalid API Key")
         await ws.close()
         return False
 
 
+async def internalError(ws, e):
+    print("Error: {}".format(e))
+    await ws.send("Error: Internal Server Error")
+
+
+async def getFlow(ws, api_key, scheduler):
+    if not await authorisation(ws, api_key, scheduler, True):
+        return False
+    try:
+        flows = await Flow.filter(api_key=api_key).get_or_none().values("flow_id", "name")
+        if flows:
+            return flows
+        else:
+            await ws.send("Unknown Error")
+            await ws.close()
+    except WebsocketClosed as e:
+        print("Websocket closed.", e)
+    except Exception as e:
+        print("DEBUG: Internal Error", e)
+        await internalError(ws, e)
+
+
+async def getStream(ws, api_key, scheduler, flow):
+    await authorisation(ws, api_key, scheduler)
+    try:
+        streams = await Stream.filter(flow_id=flow["flow_id"]).values()
+        print("streams", streams)
+        if streams:
+            response = ["streams", streams]
+            await ws.send(ujson.dumps(response))
+        else:
+            await ws.send("No Streams defined yet.")
+    except Exception as e:
+        print("Internal Error:", e)
+
+
+async def updateDaemonStatus(api_key, status):
+    try:
+        await Flow.filter(api_key=api_key).update(status=status)
+    except Exception as e:
+        print("DEBUG: Internal Error:", e)
+        # await internalError(ws, e)
+
+
 async def DaemonWSS(request, ws: Websocket):
-    print("DaemonWSS")
-    data = {'foo': 'bar'}
-    # while True:
+    print("Websocket Connected")
+    api_key = request.headers["api_key"]
+    scheduler = AsyncIOScheduler()
+    flowDetails = await getFlow(ws, api_key, scheduler)
+    if not flowDetails:
+        return
+    await updateDaemonStatus(api_key, "online")
+    print("Flow Details: {}".format(flowDetails))
+    scheduler.add_job(getStream, 'interval', seconds=10,
+                      args=[ws, api_key, scheduler, flowDetails])
 
-    while True:
+    try:
+        scheduler.start()
         try:
-            with async_timeout.timeout(5):
-                data = await ws.recv()
-                print("recv data {}.".format(data))
-        except:
-            pass
+            await ws.send(ujson.dumps(["welcome", "Hello Flow... {}".format(flowDetails["name"])]))
+        except Exception as e:
+            print("Error: ", e)
+            await ws.send("Hello Flow...")
+        while True:
+            # api_key = request.headers["api_key"]
+            data = await ws.recv()
+            await ws.send("Recieved: {}".format(data))
 
-        print("sending data {}.".format(data))
-        await ws.send(ujson.dumps(data))
-        # if await authorisation(request, ws):
-        #     api_key = request.headers["api_key"]
-        #     data = await ws.recv()
-        #     data = json.loads(data)
-        #     print(data)
-        #     print(request)
-        #     print(request.headers["api_key"])
-        #     try:
-        #         if data["command"] == "ping":
-        #             await ws.send("pong")
-        #         elif data["command"] == "get":
-        #             try:
-        #                 flows = await Flow.filter(api_key=api_key).get_or_none().values("flow_id", "name")
-        #                 if flows:
-        #                     await ws.send(ujson.dumps(flows))
-        #                     # await ws.send_data("hello")
-        #                 else:
-        #                     await ws.send("Error: No Flows Associated with API Key")
-        #             except Exception as e:
-        #                 print("1", e)
-        #                 await ws.send("Error: Internal Server Error 1")
-        #         else:
-        #             await ws.send("Error: Invalid command")
-        #     except Exception as e:
-        #         print(e)
-        #         await ws.send("Error: Internal Server Error 2")
+    except Exception as e:
+        print("Something", e)
+    except:
+        print("Disconnected")
+        scheduler.shutdown()
+        await updateDaemonStatus(api_key, "offline")
 
-        # data = {'foo': 'bar'}
-        # await ws.send(ujson.dumps(data))
-        # await asyncio.sleep(10)
+    # data = {'foo': 'bar'}
+    # await ws.send(ujson.dumps(data))
+    # await asyncio.sleep(10)
