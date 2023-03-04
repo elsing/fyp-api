@@ -50,7 +50,7 @@ class UserValidation(Schema):
 class Delta(Model):
     delta_id = dbfields.IntField(pk=True)
     org_id = dbfields.ForeignKeyField("models.Org", related_name="deltas")
-    name = dbfields.CharField(max_length=50)
+    name = dbfields.CharField(max_length=20)
     initiated = dbfields.BooleanField(default=False)
     # Maybe add created by??
 
@@ -132,11 +132,11 @@ class Stream(Model):
     config = dbfields.CharField(null=True, max_length=1000)
     public_key = dbfields.CharField(null=True, max_length=1000)
     ip = dbfields.CharField(max_length=18)
-    endpoint = dbfields.CharField(null=True, max_length=15)
+    endpoint = dbfields.CharField(max_length=15)
     # dns = dbfields.CharField(max_length=16)
     tunnel = dbfields.CharField(null=True, max_length=1000)
     error = dbfields.CharField(null=True, max_length=1000)
-    initiated = dbfields.BooleanField(default=False)
+    status = dbfields.CharField(default="init", max_length=16)
 
     def __str__(self):
         return str(self.stream_id)
@@ -151,8 +151,8 @@ class StreamValidation(Schema):
     config = fields.Str(load_default="")
     public_key = fields.Str(load_default="")
     ip = fields.Str(required=True)
-    endpoint = fields.Str(load_default="")
+    endpoint = fields.Str(required=True)
     # dns = fields.Str(load_default="1.1.1.1")
     tunnel = fields.Str(required=True)
     error = fields.Str(load_default="")
-    initiated = fields.Bool(load_default=False)
+    status = fields.Str(load_default="init")

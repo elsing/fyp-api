@@ -14,14 +14,13 @@ async def authorisation(ws, api_key, scheduler, firstLoad=False):
         if firstLoad:
             if valid["status"] == "online":
                 print("Already Online")
-                await ws.send("Flow already connected.")
+                await sendInfo(ws, "API Key already in use")
                 await ws.close()
                 return False
         return True
     else:
-        print("Invalid API Key")
         scheduler.remove_all_jobs()
-        await ws.send("Invalid API Key")
+        await sendInfo(ws, "Invalid API Key")
         await ws.close()
         return False
 
@@ -29,6 +28,10 @@ async def authorisation(ws, api_key, scheduler, firstLoad=False):
 async def internalError(ws, e):
     print("Error: {}".format(e))
     await ws.send("Error: Internal Server Error")
+
+
+async def sendInfo(ws, message):
+    await ws.send(ujson.dumps(["info", message]))
 
 
 async def getFlow(ws, api_key, scheduler):
@@ -57,7 +60,7 @@ async def getStream(ws, api_key, scheduler, flow):
             response = ["streams", streams]
             await ws.send(ujson.dumps(response))
         else:
-            await ws.send(ujson.dumps(["info", "No Streams defined yet."]))
+            await sendInfo(ws, "No Streams defined yet.")
     except Exception as e:
         print("Internal Error:", e)
 
@@ -70,43 +73,64 @@ async def updateDaemonStatus(api_key, status):
         # await internalError(ws, e)
 
 
+async def confirmStatus(ws, firstLoad=False):
+    await ws.send(ujson.dumps(["confirm"]))
+    confirm = await ws.recv()
+    confirm = json.loads(confirm)
+    print("Confirm: ", confirm)
+    return confirm
+
+
 async def DaemonWSS(request, ws: Websocket):
+    confirmed = False
+
     print("Websocket Connected")
     api_key = request.headers["api_key"]
+    print("API Key: {}".format(api_key))
     scheduler = AsyncIOScheduler()
     flowDetails = await getFlow(ws, api_key, scheduler)
     if not flowDetails:
         return
-    await updateDaemonStatus(api_key, "online")
     print("Flow Details: {}".format(flowDetails))
     scheduler.add_job(getStream, 'interval', seconds=10,
                       args=[ws, api_key, scheduler, flowDetails])
-
+    # scheduler.add_job(confirmStatus, 'interval', seconds=30, args=[ws])
     try:
-        scheduler.start()
-        try:
-            await ws.send(ujson.dumps(["info", "Hello Flow... {}".format(flowDetails["name"])]))
-        except Exception as e:
-            print("Error: ", e)
-            await ws.send("Hello Flow...")
+        # Confirm response from the daemon
+        confirm = await confirmStatus(ws, firstLoad=True)
+        if confirm["cmd"] == "confirm":
+            print("Confirmed")
+            confirmed = True
+            await sendInfo(ws, "Hello Flow {}".format(flowDetails["name"]))
+            await updateDaemonStatus(api_key, "online")
+            # Once confirmed, start the scheduler
+            scheduler.start()
+        # Start the loop
         while True:
             # api_key = request.headers["api_key"]
             data = await ws.recv()
             data = json.loads(data)
             if data["cmd"] == "patch":
                 try:
-                    await Stream.filter(stream_id=data["id"]).update(initiated=data["info"])
+                    if data["field"] == "status":
+                        await Stream.filter(stream_id=data["id"]).update(status=data["value"])
+                    elif data["field"] == "error":
+                        await Stream.filter(stream_id=data["id"]).update(error=data["value"])
+
                 except:
-                    await ws.send("Error: Internal Server Error - Failed to update information.")
-                    print(
-                        "Error: Internal Server Error - Failed to update information for stream: {}".format(data["id"]))
-            # await ws.send("Recieved: {}".format(data))
+                    await sendInfo(ws, "Error: Internal Server Error - Failed to update information.")
+            elif data["cmd"] == "delete":
+                try:
+                    await Stream.filter(stream_id=data["id"]).delete()
+                except:
+                    await sendInfo(ws, "Error: Internal Server Error - Failed to delete stream.")
 
     except Exception as e:
         print("Something", e)
     except:
         print("Disconnected")
-        scheduler.shutdown()
+        if confirmed:
+            scheduler.shutdown()
         await updateDaemonStatus(api_key, "offline")
 
     # data = {'foo': 'bar'}

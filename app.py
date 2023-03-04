@@ -2,6 +2,7 @@ import bcrypt
 from sanic import Sanic, Websocket, Request
 from sanic.response import text, json, empty
 from sanic.exceptions import SanicException
+from sanic.worker.manager import WorkerManager
 from sanic_restful_api import Resource, Api
 from sanic_ext import Extend, cors
 from sanic_cors import CORS
@@ -27,6 +28,7 @@ class AuthError(SanicException):
 app = Sanic(__name__)
 api = Api(app)
 
+# Set CORS options
 app.config.KEEP_ALIVE_TIMEOUT = 30
 app.config.FALLBACK_ERROR_FORMAT = "json"
 # Cors settings
@@ -41,6 +43,8 @@ Extend(app)
 register_tortoise(
     app, db_url="mysql://root:root@10.100.22.1:3307/fyp_v2", modules={"models": ["common.models"]}, generate_schemas=True
 )
+
+# Auth function
 
 
 async def authenticate(request):
@@ -71,15 +75,23 @@ async def authenticate(request):
     # Return details if successful
     return user
 
+# Add the users scopes to the payload
+
 
 async def scope_extender(user):
     return user['permission']
+
+# Loads the users details into the payload
 
 
 def load_details(payload, user):
     payload.update(
         {"first_name": user['first_name'], "last_name": user["last_name"], "username": user["username"]})
     return payload
+
+
+# WorkerManager.THRESHOLD = 600
+# Sanic.start_method = "fork"
 
 
 Initialize(
@@ -113,8 +125,8 @@ api.add_resource(APIDeltaRivers, '/delta/<delta_id>/rivers',
 api.add_resource(APIRivers, '/rivers', '/rivers/<river_id>',
                  '/river', '/river/<river_id>',)
 
-api.add_resource(APIRiversStreams, '/river/<river_id>/streams',
-                 '/rivers/<river_id>/streams')
+api.add_resource(APIRiversStreams, '/river/<river_id>/streams/<stream_id>', '/river/<river_id>/streams',
+                 '/rivers/<river_id>/streams/<stream_id>', '/rivers/<river_id>/streams')
 
 api.add_resource(APIFlows, '/flows', '/flows/<flow_id>',
                  '/flow', '/flow/<flow_id>')
