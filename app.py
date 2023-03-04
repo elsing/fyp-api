@@ -111,7 +111,8 @@ Initialize(
     cookie_split=True,
     cookie_strict=False,
     cookie_samesite=None,
-    cookie_max_age=1800,)
+    cookie_max_age=3600,
+    expiration_delta=60*5*12)
 
 api.add_resource(APIUsers, '/users', '/users/<username>',
                  '/user', '/user/<username>')

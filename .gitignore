@@ -2,3 +2,5 @@ install_req.sh
 **/__pycache__/**
 .env
 .configs
+vpn.conf
+vpnpeering.conf
