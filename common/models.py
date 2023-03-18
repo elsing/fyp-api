@@ -135,7 +135,7 @@ class Stream(Model):
     endpoint = dbfields.CharField(max_length=15)
     # dns = dbfields.CharField(max_length=16)
     tunnel = dbfields.CharField(null=True, max_length=1000)
-    error = dbfields.CharField(null=True, max_length=1000)
+    error = dbfields.CharField(default="", max_length=1000)
     status = dbfields.CharField(default="init", max_length=16)
 
     def __str__(self):

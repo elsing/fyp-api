@@ -13,6 +13,7 @@ from tortoise.expressions import Q
 
 from common.payloader import getData
 
+
 def checkName(servers, clients, input):
     for client in clients:
         if client["name"] == input["name"]:
@@ -22,6 +23,7 @@ def checkName(servers, clients, input):
         if server["name"] == input["name"]:
             raise SanicException(
                 "Error: A server with this name already exists", status_code=400)
+
 
 class APIStreams(Resource):
     method_decorators = [protected()]
@@ -36,15 +38,12 @@ class APIStreams(Resource):
 
         # temp = await Stream.raw("SELECT * FROM stream INNER JOIN flow ON stream.flow_id_id = flow.flow_id WHERE stream.stream_id_id = 1")
 
-        temp = await Stream.filter(river_id=river_id).values()
+        # temp = await Stream.filter(river_id=river_id).values()
 
-        print(temp)
         # temp = await Org.filter(org_id=1).prefetch_related("flows").values()
 
-        return temp
-
         try:
-            stream = await Stream.filter(stream_id_id=stream_id).all().values()
+            stream = await Stream.filter(stream_id=stream_id).get_or_none().values()
         except ValueError:
             raise BadRequestError
         except:
@@ -100,8 +99,6 @@ class APIStreams(Resource):
                 else:
                     config, public_key = await generateConfig(servers, input)
 
-        
-
         except SanicException as err:
             raise err
         except:
@@ -118,6 +115,3 @@ class APIStreams(Resource):
 
     async def patch(self, request, stream_id=""):
         streamNotNull(stream_id)
-
-    
-
