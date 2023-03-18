@@ -18,7 +18,6 @@ def cleanUp():
 async def generateClient(wc, servers, input):
     psk = wgexec.generate_presharedkey()  # Generate PSK
 
-
     # Add relevant information to client config
     for server in servers:
         print("serverssss", server)
@@ -62,9 +61,14 @@ async def addPeerToDB(server, public_key, psk, input):
     with open("./vpnpeering.conf", "r") as server_file:
         server_config = server_file.read()
         try:
-            await Stream.filter(river_id=input["river_id"]).filter(role="server").update(config=server_config, status="pendingUpdate")
+            if server["status"] == "init":
+                status = "init"
+            else:
+                status = "pendingUpdate"
+            await Stream.filter(river_id=input["river_id"]).filter(role="server").update(config=server_config, status=status)
         except:
             raise DBAccessError
+
 
 async def newConfig(servers, input):
     # Generate keys + set file
@@ -112,16 +116,17 @@ async def newConfig(servers, input):
 
     return public_key
 
-async def removePeer(server, stream):
-        # Open existing server config 
-        with open("./vpnpeering.conf", "w") as config_file:
-            config_file.write(server["config"])
-        wc = wgconfig.WGConfig("./vpnpeering.conf")
-        wc.read_file()
 
-        # Remove peer
-        wc.del_peer(stream["public_key"])
-        wc.write_file()
+async def removePeer(server, stream):
+    # Open existing server config
+    with open("./vpnpeering.conf", "w") as config_file:
+        config_file.write(server["config"])
+    wc = wgconfig.WGConfig("./vpnpeering.conf")
+    wc.read_file()
+
+    # Remove peer
+    wc.del_peer(stream["public_key"])
+    wc.write_file()
 
 
 async def wgConfig(servers, input, regenerate):

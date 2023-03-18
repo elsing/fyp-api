@@ -4,3 +4,4 @@ install_req.sh
 .configs
 vpn.conf
 vpnpeering.conf
+vpn.conf
