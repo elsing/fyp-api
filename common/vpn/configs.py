@@ -10,13 +10,13 @@ async def Selector(servers, input, regen=False):
     protocol = await River.filter(river_id=input["river_id"]).get_or_none().values_list("protocol", flat=True)
     if not protocol:
         raise SanicException(
-            "Error: River not found", status_code=400)
+            "River not found", status_code=400)
     if protocol == "wireguard":
 
         public_key = await wgConfig(servers, input, regen)
     else:
         raise SanicException(
-            "Error: Protocol not supported yet", status_code=400)
+            "Protocol not supported yet", status_code=400)
     return public_key
 
 

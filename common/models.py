@@ -137,6 +137,7 @@ class Stream(Model):
     tunnel = dbfields.CharField(null=True, max_length=1000)
     error = dbfields.CharField(default="", max_length=1000)
     status = dbfields.CharField(default="init", max_length=16)
+    flows: dbfields.ReverseRelation["Flow"]
 
     def __str__(self):
         return str(self.stream_id)
@@ -145,14 +146,14 @@ class Stream(Model):
 class StreamValidation(Schema):
     flow_id = fields.Int(required=True)
     river_id = fields.Int(required=True)
-    name = fields.Str(required=True)
+    name = fields.Str(required=True, validate=validate.Length(min=1))
     role = fields.Str(required=True)
     port = fields.Int(load_default=51820)
     config = fields.Str(load_default="")
     public_key = fields.Str(load_default="")
-    ip = fields.Str(required=True)
-    endpoint = fields.Str(required=True)
+    ip = fields.Str(required=True, validate=validate.Length(min=1))
+    endpoint = fields.Str(required=True, validate=validate.Length(min=1))
     # dns = fields.Str(load_default="1.1.1.1")
-    tunnel = fields.Str(required=True)
+    tunnel = fields.Str(required=True, validate=validate.Length(min=1))
     error = fields.Str(load_default="")
     status = fields.Str(load_default="init")
