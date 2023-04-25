@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+apscheduler = "==3.10.0"
+aiomysql = "==0.1.1"
+eventlet = "==0.33.3"
+marshmallow = "==3.19.0"
+bcrypt = "==4.0.1"
+sanic = "==22.12.0"
+sanic-ext = "==23.3.0"
+sanic-jwt = "==1.8.0"
+sanic-restful-api = "==0.1.5"
+tortoise-orm = "==0.19.3"
+ujson = "==5.7.0"
+wgconfig = "==0.3.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

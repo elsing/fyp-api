@@ -12,6 +12,8 @@ from common.errors import DBAccessError, BadRequestError
 from tortoise.exceptions import OperationalError
 from tortoise.transactions import atomic
 
+from common.responses import successResponse
+
 
 def deltaNotNull(delta):
     if delta == "":
@@ -93,7 +95,7 @@ class APIDeltas(Resource):
 
         # Log delta creation and return response
         logger.info("Delta added with name: {}".format(input["name"]))
-        return json("Delta added! ✅", status=201)
+        return successResponse("Delta added! ✅", status=201)
 
     async def patch(self, request, delta_id=""):
         deltaNotNull(delta_id)
@@ -112,7 +114,7 @@ class APIDeltas(Resource):
 
         # Log delta update and return response
         logger.info("Delta updated")
-        return json("Delta updated! ✅", status=201)
+        return successResponse("Delta updated! ✅", status=201)
 
     async def delete(self, request, delta_id=""):
         deltaNotNull(delta_id)
@@ -138,4 +140,4 @@ class APIDeltas(Resource):
 
         # Log delta deletion and return response
         logger.info("DELETE Delta request for '{}'".format(delta_id))
-        return json("Delta deleted! ✅", status=201)
+        return successResponse("Delta deleted! ✅", status=201)

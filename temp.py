@@ -1,15 +1,18 @@
-from python_wireguard import Key
-import wgconfig
 
-test = ""
+from pebble import concurrent
 
-private, public = Key.key_pair()
 
-wc = wgconfig.WGConfig(test)
+@concurrent.process(timeout=2)
+def mymethod():
+    for i in range(1000000):
+        print(i)
 
-wc.add_attr(None, 'PrivateKey', private)
 
-print(wc)
+test = mymethod()
 
-# wc.write
-# print(test)
+try:
+    result = test.result()
+except TimeoutError:
+    print("Timeout")
+except Exception as e:
+    print("Error: {}".format(e))

@@ -1,11 +1,10 @@
 import bcrypt
-from sanic import Sanic, Websocket, Request
+from sanic import Sanic, Websocket
 from sanic.response import text, json, empty
 from sanic.exceptions import SanicException
-from sanic.worker.manager import WorkerManager
-from sanic_restful_api import Resource, Api
+from sanic_restful_api import Api
 from sanic_ext import Extend, cors
-from sanic_cors import CORS
+from common.responses import successResponse
 from resources.Users import APIUsers
 from resources.Deltas import APIDeltas, APIDeltaRivers
 from resources.Rivers import APIRivers, APIRiversStreams
@@ -14,7 +13,6 @@ from resources.Flows import APIFlows
 from tortoise.contrib.sanic import register_tortoise
 from sanic_jwt import Initialize
 from common.models import User
-# from argon2 import PasswordHasher
 from sanic.log import logger
 from resources.Daemons import DaemonWSS
 
@@ -75,15 +73,13 @@ async def authenticate(request):
     # Return details if successful
     return user
 
+
 # Add the users scopes to the payload
-
-
 async def scope_extender(user):
     return user['permission']
 
+
 # Loads the users details into the payload
-
-
 def load_details(payload, user):
     payload.update(
         {"first_name": user['first_name'], "last_name": user["last_name"], "username": user["username"]})
@@ -136,17 +132,6 @@ api.add_resource(APIStreams, '/streams', '/streams/<stream_id>',
                  '/stream', '/stream/<stream_id>')
 
 
-async def online_handler(request: Request, ws: Websocket):
-    while True:
-        data = "hello!"
-        print("Sending: " + data)
-        await ws.send(data)
-        data = await ws.recv()
-        print("Received: " + data)
-
-# app.websocket('/websocket', online_handler)
-
-
 @app.websocket("/websocket")
 async def websocket_handler(request, ws: Websocket):
     await DaemonWSS(request, ws)
@@ -155,7 +140,8 @@ async def websocket_handler(request, ws: Websocket):
 @app.route("/auth/logout")
 async def test(request):
     print(request)
-    response = text("The cookie monster will be satisfied. Thank you...!")
+    response = successResponse(
+        "The cookie monster will be satisfied. Thank you...!")
     toDelete = ["auth_token", "auth_token_signature"]
     for cookie in toDelete:
         response.cookies[cookie] = ""
@@ -165,5 +151,5 @@ async def test(request):
     return response
 
 if __name__ == '__main__':
-    app.run(dev=True, host="0.0.0.0", port=8000, workers=1)
-    # app.run(host="0.0.0.0", port=8000, workers=1)
+    # app.run(dev=True, host="0.0.0.0", port=8000, workers=1)
+    app.run(host="0.0.0.0", port=8000, workers=1)

@@ -121,19 +121,17 @@ class RiverValidation(Schema):
 
 class Stream(Model):
     stream_id = dbfields.IntField(pk=True)
-    # flow_id = dbfields.ForeignKeyField("models.Flow", related_name="flows")
     flow: dbfields.ForeignKeyRelation[Flow] = dbfields.ForeignKeyField(
         "models.Flow", related_name="streams")
     river: dbfields.ForeignKeyRelation[River] = dbfields.ForeignKeyField(
         "models.River", related_name="rivers")
-    name = dbfields.CharField(max_length=20)
+    name = dbfields.CharField(max_length=12)
     role = dbfields.CharField(default="client", max_length=6)
     port = dbfields.IntField(max_length=5, default=51820)
     config = dbfields.CharField(null=True, max_length=1000)
     public_key = dbfields.CharField(null=True, max_length=1000)
     ip = dbfields.CharField(max_length=18)
     endpoint = dbfields.CharField(max_length=15)
-    # dns = dbfields.CharField(max_length=16)
     tunnel = dbfields.CharField(null=True, max_length=1000)
     error = dbfields.CharField(default="", max_length=1000)
     status = dbfields.CharField(default="init", max_length=16)

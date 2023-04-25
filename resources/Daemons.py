@@ -2,6 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from common.models import Stream, Flow
 from sanic import json as sanic_json, Websocket
 from sanic.exceptions import WebsocketClosed
+from eventlet.timeout import Timeout
 from time import sleep
 import ujson
 import json
@@ -74,6 +75,7 @@ async def updateDaemonStatus(api_key, status):
 
 
 async def confirmStatus(ws, firstLoad=False):
+    confirm = None
     await ws.send(ujson.dumps(["confirm"]))
     confirm = await ws.recv()
     confirm = json.loads(confirm)
@@ -92,8 +94,8 @@ async def DaemonWSS(request, ws: Websocket):
     if not flowDetails:
         return
     print("Flow Details: {}".format(flowDetails))
-    scheduler.add_job(getStream, 'interval', seconds=10,
-                      args=[ws, api_key, scheduler, flowDetails])
+    scheduler.add_job(getStream, 'interval', seconds=30,
+                      args=[ws, api_key, scheduler, flowDetails], )
     # scheduler.add_job(confirmStatus, 'interval', seconds=30, args=[ws])
     try:
         # Confirm response from the daemon
@@ -124,6 +126,8 @@ async def DaemonWSS(request, ws: Websocket):
                     await Stream.filter(stream_id=data["id"]).delete()
                 except:
                     await sendInfo(ws, "Error: Internal Server Error - Failed to delete stream.")
+            else:
+                await sendInfo(ws, "Error: Unknown Command")
 
     except Exception as e:
         print("Something", e)

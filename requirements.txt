@@ -1,10 +1,12 @@
-sanic
-sanic_restful_api 
-marshmallow
-aiomysql
-# uvloop 
-tortoise-orm[mysql]
-sanic-jwt
-sanic-ext
-sanic-cors
-bcrypt
+APScheduler==3.10.0
+aiomysql==0.1.1
+eventlet==0.33.3
+marshmallow==3.19.0
+bcrypt==4.0.1
+sanic==22.12.0
+sanic_ext==23.3.0
+sanic_jwt==1.8.0
+sanic_restful_api==0.1.5
+tortoise-orm==0.19.3
+ujson==5.7.0
+wgconfig==0.3.0

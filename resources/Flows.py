@@ -16,6 +16,8 @@ from common.payloader import getData
 from tortoise.expressions import Q
 from tortoise.exceptions import DoesNotExist
 
+from common.responses import successResponse
+
 
 def flowNotNull(flow):
     if flow == "":
@@ -72,7 +74,7 @@ class APIFlows(Resource):
         # Log Flow creation and return response
         logger.info("Flow added with name: {} by user_id: ".format(
             input["name"], user_id))
-        return json("Flow added! ✅", status=201)
+        return successResponse("Flow added! ✅", status=201)
 
     async def patch(self, request, flow_id=""):
         flowNotNull(flow_id)
@@ -103,7 +105,7 @@ class APIFlows(Resource):
 
         # Log Flow creation and return response
         logger.info("Flow updated")
-        return json("Flow updated! ✅", status=201)
+        return successResponse("Flow updated! ✅", status=201)
 
     async def delete(self, request, flow_id=""):
         flowNotNull(flow_id)
@@ -115,4 +117,4 @@ class APIFlows(Resource):
 
         # Log Flow deletion and return response
         logger.info("DELETE flow request for '{}'".format(flow_id))
-        return json("Flow deleted! ✅", status=201)
+        return successResponse("Flow deleted! ✅", status=201)

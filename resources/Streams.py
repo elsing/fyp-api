@@ -26,11 +26,12 @@ def checkName(servers, clients, input):
         if server["name"] == input["name"]:
             raise SanicException(
                 "A server with this name already exists", status_code=400)
-        
+
+
 async def regenStream(river_id, stream):
     try:
-            clients = await Stream.filter(river_id=river_id).filter(role="client").values()
-            servers = await Stream.filter(river_id=river_id).filter(role="server").values()
+        clients = await Stream.filter(river_id=river_id).filter(role="client").values()
+        servers = await Stream.filter(river_id=river_id).filter(role="server").values()
     except:
         raise DBAccessError
 
@@ -74,13 +75,11 @@ class APIStreams(Resource):
         # temp = await Org.filter(org_id=1).prefetch_related("flows").values()
 
         try:
-            stream = await Stream.filter(stream_id=stream_id).get_or_none().prefetch_related("flow__name").values()
+            stream = await Stream.filter(stream_id=stream_id).get_or_none().values()
         except ValueError:
             raise BadRequestError
         except:
             raise DBAccessError
-
-        print(stream)
 
         # Return JSON of specified stream
         if stream:
@@ -155,7 +154,7 @@ class APIStreams(Resource):
             servers = await Stream.filter(river_id=request.json["river_id"]).filter(role="server").values()
         except:
             raise DBAccessError
-        
+
         await regenStream(request.json["river_id"], request.json)
         config, public_key = await generateConfig(servers, request.json)
 
@@ -166,12 +165,13 @@ class APIStreams(Resource):
                 stream.update_from_dict(request.json)
                 stream.config = config
                 stream.public_key = public_key
+                stream.status = "pendingUpdate"
                 # await Stream.filter(stream_id=stream_id).update_from_dict(jsonmod.dumps(request.json))
                 await stream.save()
             else:
                 raise SanicException(
                     "That Stream was not found...! :( 🔍", status_code=404)
-            
+
         except tortoise.exceptions.ValidationError as err:
             raise SanicException(err, status_code=400)
         except:
