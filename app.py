@@ -16,22 +16,18 @@ from common.models import User
 from sanic.log import logger
 from resources.Daemons import DaemonWSS
 
+# Change to your domain
+domain = "example.com"  # CHANGEME
+cookiesecret = "7N3%WZrjj$eDYC7czPyP"  # CHANGME
 
-class AuthError(SanicException):
-    message = "Either your password or username are wrong."
-    status_code = 401
-    quiet = True
-
-
+# Create the app
 app = Sanic(__name__)
 api = Api(app)
 
-# Set CORS options
+# Set options
 app.config.KEEP_ALIVE_TIMEOUT = 30
 app.config.FALLBACK_ERROR_FORMAT = "json"
-# Cors settings
-app.config.CORS_ORIGINS = "https://<CHANGEME>"
-# app.config.CORS_ORIGINS = "*"
+app.config.CORS_ORIGINS = "https://"+domain
 app.config.CORS_SUPPORTS_CREDENTIALS = True
 app.config.CORS_METHODS = ["GET", "POST", "OPTIONS", "PATCH"]
 app.config.CORS_HEADERS = "content-type"
@@ -41,6 +37,14 @@ Extend(app)
 register_tortoise(
     app, db_url="mysql://root:CHANGEMEinsecurepassword!@fyp-db:3306/fyp", modules={"models": ["common.models"]}, generate_schemas=True
 )
+
+# Auth error class
+
+
+class AuthError(SanicException):
+    message = "Either your password or username are wrong."
+    status_code = 401
+    quiet = True
 
 # Auth function
 
@@ -94,13 +98,14 @@ Initialize(
     app,
     authenticate=authenticate,
     # This should to changed in production to ENV variable
-    secret="7N3%WZrjj$eDYC7czPyP",
+
+    secret=cookiesecret,
     add_scopes_to_payload=scope_extender,
     extend_payload=load_details,
     access_token_name="auth_token",
     cookie_set=True,
     cookie_secure=True,
-    cookie_domain="singer.systems",
+    cookie_domain=domain,
     cookie_path="/",
     cookie_token_name="auth_token",
     cookie_split_signature_name="auth_token_signature",
