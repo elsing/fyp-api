@@ -14,7 +14,7 @@ git clone https://github.com/elsing/fyp-panel.git panel
 git clone https://github.com/elsing/fyp-api.git api
 
 # Move need files
-mv -R api/docker/traefik ./
+mv api/docker/traefik ./
 mv api/docker/docker-compose.yml ./
 
 #Notify
