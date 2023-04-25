@@ -1,4 +1,6 @@
+echo
 echo "This script needs git, Docker and Docker compose."
+echo
 
 # Create initial files
 mkdir /opt/fyp-combined
@@ -19,8 +21,10 @@ mv api/docker/docker-compose.yml ./
 
 #Notify
 echo "Please change the CHANGEME settings found in:"
+echo
 echo "/opt/fyp-combined/api/app.py"
 echo "/opt/fyp-combined/docker-compose.yml"
+echo "/opt/fyp-combined/traefik/config.yml"
 echo
 echo "Finally, run:"
 echo "docker compose up -d"
