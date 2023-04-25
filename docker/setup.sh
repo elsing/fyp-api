@@ -19,8 +19,8 @@ mv api/docker/docker-compose.yml ./
 
 #Notify
 echo "Please change the CHANGEME settings found in:"
-echo "api/app.py"
-echo "docker-compose.yml"
+echo "/opt/fyp-combined/api/app.py"
+echo "/opt/fyp-combined/docker-compose.yml"
 echo
 echo "Finally, run:"
 echo "docker compose up -d"
