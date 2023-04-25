@@ -30,7 +30,7 @@ api = Api(app)
 app.config.KEEP_ALIVE_TIMEOUT = 30
 app.config.FALLBACK_ERROR_FORMAT = "json"
 # Cors settings
-app.config.CORS_ORIGINS = "https://watershed.singer.systems"
+app.config.CORS_ORIGINS = "https://<CHANGEME>"
 # app.config.CORS_ORIGINS = "*"
 app.config.CORS_SUPPORTS_CREDENTIALS = True
 app.config.CORS_METHODS = ["GET", "POST", "OPTIONS", "PATCH"]
@@ -39,7 +39,7 @@ app.config.CORS_EXPOSE_HEADERS = "content-type"
 Extend(app)
 
 register_tortoise(
-    app, db_url="mysql://root:root@10.100.22.1:3307/fyp_v2", modules={"models": ["common.models"]}, generate_schemas=True
+    app, db_url="mysql://root:CHANGEMEinsecurepassword!@fyp-db:3306/fyp", modules={"models": ["common.models"]}, generate_schemas=True
 )
 
 # Auth function

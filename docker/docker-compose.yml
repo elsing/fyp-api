@@ -9,7 +9,7 @@ services:
     expose:
       - 3000:3000
     build:
-      dockerfile: panel/Dockerfile
+      dockerfile: panel/docker/Dockerfile
     networks:
       - fyp
 
@@ -19,7 +19,7 @@ services:
     expose:
       - 8000:8000
     build:
-      dockerfile: api/Dockerfile
+      dockerfile: api/docker/Dockerfile
     networks:
       - fyp
 
@@ -43,7 +43,7 @@ services:
       MYSQL_ROOT_PASSWORD: CHANGEMEinsecurepassword!
       MYSQL_DATABASE: fyp
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-    ports:
+    expose:
       - "3306:3306"
     volumes:
       - /opt/fyp-combined/db/data:/var/lib/mysql
