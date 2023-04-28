@@ -1,8 +1,8 @@
 version: "3.3"
 
 services:
-  fyp-panel:
-    container_name: fyp-panel
+  watershed-panel:
+    container_name: watershed-panel
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_API_URL=https://<CHANGEME>
@@ -11,21 +11,21 @@ services:
     build:
       dockerfile: panel/docker/Dockerfile
     networks:
-      - fyp
+      - watershed
 
-  fyp-api:
-    container_name: fyp-api
+  watershed-api:
+    container_name: watershed-api
     restart: unless-stopped
     expose:
       - 8000:8000
     build:
       dockerfile: api/docker/Dockerfile
     networks:
-      - fyp
+      - watershed
 
-  fyp-traefik:
+  watershed-traefik:
     image: traefik:latest
-    container_name: fyp-traefik
+    container_name: watershed-traefik
     ports:
       - "8080:80"
       - "444:443"
@@ -33,23 +33,23 @@ services:
       - ./traefik/traefik.yml:/traefik.yml:ro
       - ./traefik/config.yml:/config.yml:ro
     networks:
-      - fyp
+      - watershed
 
-  fyp-db:
-    container_name: fyp-db
+  watershed-db:
+    container_name: watershed-db
     image: mysql:8.0
     command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: CHANGEMEinsecurepassword!
-      MYSQL_DATABASE: fyp
+      MYSQL_DATABASE: watershed
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     expose:
       - "3306:3306"
     volumes:
-      - /opt/fyp-combined/db/data:/var/lib/mysql
+      - /opt/watershed-combined/db/data:/var/lib/mysql
     restart: unless-stopped
     networks:
-      - fyp
+      - watershed
 
 networks:
-  fyp:
+  watershed:

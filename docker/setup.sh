@@ -3,8 +3,8 @@ echo "This script needs git, Docker and Docker compose."
 echo
 
 # Create initial files
-mkdir /opt/fyp-combined
-cd /opt/fyp-combined
+mkdir /opt/watershed-combined
+cd /opt/watershed-combined
 
 # Create folder
 mkdir panel
@@ -22,9 +22,9 @@ mv api/docker/docker-compose.yml ./
 #Notify
 echo "Please change the CHANGEME settings found in:"
 echo
-echo "/opt/fyp-combined/api/app.py"
-echo "/opt/fyp-combined/docker-compose.yml"
-echo "/opt/fyp-combined/traefik/config.yml"
+echo "/opt/watershed-combined/api/app.py"
+echo "/opt/watershed-combined/docker-compose.yml"
+echo "/opt/watershed-combined/traefik/config.yml"
 echo
 echo "Finally, run:"
 echo "docker compose up -d"
