@@ -4,8 +4,6 @@ services:
   watershed-panel:
     container_name: watershed-panel
     restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_API_URL=https://<CHANGEME>
     expose:
       - 3000:3000
     build:
@@ -27,8 +25,8 @@ services:
     image: traefik:latest
     container_name: watershed-traefik
     ports:
-      - "8080:80"
-      - "444:443"
+      - 8080:80
+      - 8443:443
     volumes:
       - ./traefik/traefik.yml:/traefik.yml:ro
       - ./traefik/config.yml:/config.yml:ro
@@ -39,14 +37,15 @@ services:
     container_name: watershed-db
     image: mysql:8.0
     init: true
-    command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-file /var/lib/mysql/init.sql
+    command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-file /data/init.sql
     environment:
       MYSQL_ROOT_PASSWORD: CHANGEMEinsecurepassword
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     expose:
-      - "3306:3306"
+      - 3306:3306
     volumes:
-      - /opt/watershed-combined/db:/var/lib/mysql
+      - /opt/watershed-combined/db/init.sql:/data/init.sql:ro
+      - /opt/watershed-combined/db/data:/var/lib/mysql
     restart: unless-stopped
     networks:
       - watershed

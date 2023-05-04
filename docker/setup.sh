@@ -9,7 +9,7 @@ cd /opt/watershed-combined
 # Create folder
 mkdir panel
 mkdir api
-mkdir db
+mkdir -p db/data
 
 # Get source code
 git clone https://github.com/elsing/fyp-panel.git panel
