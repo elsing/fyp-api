@@ -30,3 +30,5 @@ echo "/opt/watershed-combined/traefik/config.yml - Traefik Host SNIs & CORS sett
 echo
 echo "Finally, run:"
 echo "docker compose up -d"
+echo
+echo "User: admin Password: admin"
