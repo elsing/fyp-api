@@ -35,7 +35,7 @@ app.config.CORS_EXPOSE_HEADERS = "content-type"
 Extend(app)
 
 register_tortoise(
-    app, db_url="mysql://root:CHANGEMEinsecurepassword!@watershed-db:3306/fyp", modules={"models": ["common.models"]}, generate_schemas=True
+    app, db_url="mysql://root:CHANGEMEinsecurepassword@watershed-db:3306/watershed", modules={"models": ["common.models"]}, generate_schemas=True
 )
 
 # Auth error class
