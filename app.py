@@ -27,7 +27,7 @@ api = Api(app)
 # Set options
 app.config.KEEP_ALIVE_TIMEOUT = 30
 app.config.FALLBACK_ERROR_FORMAT = "json"
-app.config.CORS_ORIGINS = "https://"+domain
+app.config.CORS_ORIGINS = "https://*."+domain
 app.config.CORS_SUPPORTS_CREDENTIALS = True
 app.config.CORS_METHODS = ["GET", "POST", "OPTIONS", "PATCH"]
 app.config.CORS_HEADERS = "content-type"

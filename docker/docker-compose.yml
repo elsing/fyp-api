@@ -38,15 +38,15 @@ services:
   watershed-db:
     container_name: watershed-db
     image: mysql:8.0
-    command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    init: true
+    command: mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --init-file /var/lib/mysql/init.sql
     environment:
       MYSQL_ROOT_PASSWORD: CHANGEMEinsecurepassword
-      MYSQL_DATABASE: watershed
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     expose:
       - "3306:3306"
     volumes:
-      - /opt/watershed-combined/db/data:/var/lib/mysql
+      - /opt/watershed-combined/db:/var/lib/mysql
     restart: unless-stopped
     networks:
       - watershed
