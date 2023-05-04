@@ -21,7 +21,6 @@ USE `watershed`;
 -- Table structure for table `delta`
 --
 
-DROP TABLE IF EXISTS `delta`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `delta` (
@@ -48,7 +47,6 @@ UNLOCK TABLES;
 -- Table structure for table `flow`
 --
 
-DROP TABLE IF EXISTS `flow`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `flow` (
@@ -83,7 +81,6 @@ UNLOCK TABLES;
 -- Table structure for table `org`
 --
 
-DROP TABLE IF EXISTS `org`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `org` (
@@ -110,7 +107,6 @@ UNLOCK TABLES;
 -- Table structure for table `river`
 --
 
-DROP TABLE IF EXISTS `river`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `river` (
@@ -137,7 +133,6 @@ UNLOCK TABLES;
 -- Table structure for table `stream`
 --
 
-DROP TABLE IF EXISTS `stream`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stream` (
@@ -175,7 +170,6 @@ UNLOCK TABLES;
 -- Table structure for table `user`
 --
 
-DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user` (
