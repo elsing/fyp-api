@@ -23,9 +23,9 @@ mv api/docker/db/* ./db
 #Notify
 echo "Please change the CHANGEME settings found in:"
 echo
-echo "/opt/watershed-combined/api/app.py" - Domain Name
-echo "/opt/watershed-combined/panel/.env" - API URL
-echo "/opt/watershed-combined/docker-compose.yml" - password
+echo "/opt/watershed-combined/api/app.py - Domain Name"
+echo "/opt/watershed-combined/panel/.env - API URL"
+echo "/opt/watershed-combined/docker-compose.yml - password"
 echo "/opt/watershed-combined/traefik/config.yml - Traefik Host SNIs & CORS settings"
 echo
 echo "Finally, run:"
